@@ -1,41 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// ═══════════════════════════════════════════════════════════
+/// APP THEME — iOS-Inspired Light & Dark
+/// Light: Apple iOS 17 white/gray aesthetic
+/// Dark:  Apple iOS 17 true-black aesthetic
+/// ═══════════════════════════════════════════════════════════
 class AppTheme {
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // PREMIUM DARK PALETTE — Sleek restaurant POS theme
-  // Inspired by modern fintech and premium dashboards
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ─── SHARED SEMANTIC COLORS (adapt per brightness) ───────
+  // These are used directly in widgets — always reference
+  // via Theme.of(context).colorScheme or AppTheme static helpers.
 
-  // Primary brand colors
-  static const Color primary = Color(0xFF6C63FF);      // Rich indigo-violet
-  static const Color primaryLight = Color(0xFF8B83FF);  // Lighter variant
-  static const Color primaryDark = Color(0xFF4F46E5);   // Deep press state
+  // iOS Blue
+  static const Color iosBlue       = Color(0xFF007AFF);
+  static const Color iosBlueDark   = Color(0xFF0A84FF);
 
-  // Accent for highlights and CTAs
-  static const Color accent = Color(0xFFFF6B6B);        // Warm coral-red
-  static const Color accentLight = Color(0xFFFF8A80);   // Soft coral
+  // iOS Green
+  static const Color iosGreen      = Color(0xFF34C759);
+  static const Color iosGreenDark  = Color(0xFF30D158);
 
-  // Backgrounds — deep, layered with contrast
-  static const Color background = Color(0xFF0A0A0F);    // Near-black base
-  static const Color surface = Color(0xFF13131A);       // Card/container layer
-  static const Color surfaceLight = Color(0xFF1C1C26);  // Elevated/hover layer
-  static const Color surfaceDark = Color(0xFF08080C);   // Deepest wells
-  static const Color cardBg = Color(0xFF16161F);        // Card background
+  // iOS Red
+  static const Color iosRed        = Color(0xFFFF3B30);
+  static const Color iosRedDark    = Color(0xFFFF453A);
 
-  // Text hierarchy
-  static const Color textPrimary = Color(0xFFF0F0F5);   // Almost-white
-  static const Color textSecondary = Color(0xFF8B8B9E);  // Muted lavender-gray
+  // iOS Orange
+  static const Color iosOrange     = Color(0xFFFF9500);
+  static const Color iosOrangeDark = Color(0xFFFF9F0A);
 
-  // Semantic status colors
-  static const Color success = Color(0xFF22C55E);       // Vibrant green
-  static const Color warning = Color(0xFFFBAF24);       // Rich amber
-  static const Color error = Color(0xFFEF4444);         // Clean red
-  static const Color info = Color(0xFF3B82F6);          // Sky blue
+  // iOS Yellow
+  static const Color iosYellow     = Color(0xFFFFCC00);
+  static const Color iosYellowDark = Color(0xFFFFD60A);
 
-  // Utility gradients
+  // iOS Purple
+  static const Color iosPurple     = Color(0xFFAF52DE);
+  static const Color iosPurpleDark = Color(0xFFBF5AF2);
+
+  // iOS Teal
+  static const Color iosTeal       = Color(0xFF5AC8FA);
+  static const Color iosTealDark   = Color(0xFF64D2FF);
+
+  // ─── LIGHT THEME SURFACES ─────────────────────────────────
+  static const Color lightBg           = Color(0xFFF2F2F7); // iOS grouped bg
+  static const Color lightSurface      = Color(0xFFFFFFFF); // Cards/sheets
+  static const Color lightSurface2     = Color(0xFFF9F9FB); // Elevated layer
+  static const Color lightSurfaceOffset= Color(0xFFEFEFF4); // Inset fills
+  static const Color lightBorder       = Color(0xFFD1D1D6); // iOS separator
+  static const Color lightText         = Color(0xFF000000);
+  static const Color lightTextSecondary= Color(0xFF6C6C70); // iOS label secondary
+  static const Color lightTextTertiary = Color(0xFFAEAEB2); // iOS label tertiary
+
+  // ─── DARK THEME SURFACES ──────────────────────────────────
+  static const Color darkBg            = Color(0xFF000000); // True black
+  static const Color darkSurface       = Color(0xFF1C1C1E); // iOS dark surface
+  static const Color darkSurface2      = Color(0xFF2C2C2E); // Elevated layer
+  static const Color darkSurfaceOffset = Color(0xFF3A3A3C); // Grouped inset
+  static const Color darkBorder        = Color(0xFF38383A); // iOS dark separator
+  static const Color darkText          = Color(0xFFFFFFFF);
+  static const Color darkTextSecondary = Color(0xFF8E8E93); // iOS dark label secondary
+  static const Color darkTextTertiary  = Color(0xFF48484A); // iOS dark label tertiary
+
+  // ─── LEGACY STATIC ALIASES (keep for widgets that still reference them) ─
+  // These point to the DARK palette so existing dark-only widgets don't break.
+  static const Color primary         = iosBlueDark;
+  static const Color primaryLight    = iosTealDark;
+  static const Color primaryDark     = Color(0xFF0060DF);
+  static const Color accent          = iosOrangeDark;
+  static const Color accentLight     = Color(0xFFFFBF4D);
+  static const Color background      = darkBg;
+  static const Color surface         = darkSurface;
+  static const Color surfaceLight    = darkSurface2;
+  static const Color surfaceDark     = Color(0xFF0D0D0F);
+  static const Color cardBg          = darkSurface;
+  static const Color textPrimary     = darkText;
+  static const Color textSecondary   = darkTextSecondary;
+  static const Color success         = iosGreenDark;
+  static const Color warning         = iosOrangeDark;
+  static const Color error           = iosRedDark;
+  static const Color info            = iosBlueDark;
+
   static const LinearGradient premiumGradient = LinearGradient(
-    colors: [Color(0xFF6C63FF), Color(0xFF4F46E5)],
+    colors: [iosBlue, iosPurple],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -43,163 +87,373 @@ class AppTheme {
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0A0A0F), Color(0xFF10101A)],
+    colors: [darkBg, Color(0xFF0D0D12)],
   );
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // THEME DATA
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(
-        primary: primary,
-        secondary: accent,
-        surface: surface,
-        error: error,
-        onSurface: textPrimary,
+  // ═══════════════════════════════════════════════
+  // LIGHT THEME — iOS White / Apple HIG inspired
+  // ═══════════════════════════════════════════════
+  static ThemeData get lightTheme {
+    final base = ThemeData.light(useMaterial3: true);
+    return base.copyWith(
+      brightness: Brightness.light,
+      colorScheme: const ColorScheme.light(
+        primary: iosBlue,
+        secondary: iosOrange,
+        surface: lightSurface,
+        error: iosRed,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: lightText,
+        onError: Colors.white,
+        outline: lightBorder,
       ),
-      scaffoldBackgroundColor: background,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        displayLarge: const TextStyle(color: textPrimary, fontWeight: FontWeight.bold, letterSpacing: -1.5),
-        displayMedium: const TextStyle(color: textPrimary, fontWeight: FontWeight.bold, letterSpacing: -0.8),
-        headlineLarge: const TextStyle(color: textPrimary, fontWeight: FontWeight.w700, letterSpacing: -0.5),
-        headlineMedium: const TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
-        headlineSmall: const TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
-        titleLarge: const TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
-        titleMedium: const TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
-        bodyLarge: const TextStyle(color: textPrimary),
-        bodyMedium: const TextStyle(color: textSecondary),
-        labelLarge: const TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+      scaffoldBackgroundColor: lightBg,
+      textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
+        displayLarge:  const TextStyle(color: lightText,          fontWeight: FontWeight.bold,  letterSpacing: -1.5),
+        displayMedium: const TextStyle(color: lightText,          fontWeight: FontWeight.bold,  letterSpacing: -0.8),
+        headlineLarge: const TextStyle(color: lightText,          fontWeight: FontWeight.w700,  letterSpacing: -0.5),
+        headlineMedium:const TextStyle(color: lightText,          fontWeight: FontWeight.w700),
+        headlineSmall: const TextStyle(color: lightText,          fontWeight: FontWeight.w600),
+        titleLarge:    const TextStyle(color: lightText,          fontWeight: FontWeight.w600),
+        titleMedium:   const TextStyle(color: lightText,          fontWeight: FontWeight.w500),
+        bodyLarge:     const TextStyle(color: lightText),
+        bodyMedium:    const TextStyle(color: lightTextSecondary),
+        bodySmall:     const TextStyle(color: lightTextTertiary),
+        labelLarge:    const TextStyle(color: lightText,          fontWeight: FontWeight.w600),
+        labelSmall:    const TextStyle(color: lightTextSecondary, letterSpacing: 0.5),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        foregroundColor: textPrimary,
+        backgroundColor: lightSurface,
+        foregroundColor: lightText,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
-        iconTheme: IconThemeData(color: textSecondary),
+        iconTheme: IconThemeData(color: iosBlue),
         titleTextStyle: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: lightText,
           letterSpacing: -0.3,
         ),
       ),
       cardTheme: CardThemeData(
-        color: cardBg,
+        color: lightSurface,
         elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: lightBorder.withValues(alpha: 0.6)),
         ),
         margin: const EdgeInsets.symmetric(vertical: 6),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
+          backgroundColor: iosBlue,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryLight,
-          side: BorderSide(color: primary.withValues(alpha: 0.5), width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          foregroundColor: iosBlue,
+          side: const BorderSide(color: iosBlue, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryLight,
+          foregroundColor: iosBlue,
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceLight,
+        fillColor: lightSurfaceOffset,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: lightBorder.withValues(alpha: 0.8)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: primary, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: iosBlue, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.6)),
-        labelStyle: const TextStyle(color: textSecondary),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: const TextStyle(color: lightTextTertiary),
+        labelStyle: const TextStyle(color: lightTextSecondary),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: primary,
+        backgroundColor: iosBlue,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: lightSurface2,
+        contentTextStyle: const TextStyle(color: lightText, fontWeight: FontWeight.w500),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: lightSurface,
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: lightSurface,
+        selectedItemColor: iosBlue,
+        unselectedItemColor: lightTextSecondary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+      ),
+      dividerTheme: DividerThemeData(
+        color: lightBorder.withValues(alpha: 0.6),
+        thickness: 0.5,
+        space: 1,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((s) =>
+          s.contains(WidgetState.selected) ? Colors.white : Colors.white),
+        trackColor: WidgetStateProperty.resolveWith((s) =>
+          s.contains(WidgetState.selected) ? iosGreen : lightBorder),
+      ),
+      listTileTheme: const ListTileThemeData(
+        tileColor: Colors.transparent,
+        iconColor: iosBlue,
+        textColor: lightText,
+      ),
+      tabBarTheme: const TabBarThemeData(
+        indicatorColor: iosBlue,
+        labelColor: iosBlue,
+        unselectedLabelColor: lightTextSecondary,
+        indicatorSize: TabBarIndicatorSize.label,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: iosBlue),
+      chipTheme: ChipThemeData(
+        backgroundColor: lightSurfaceOffset,
+        labelStyle: const TextStyle(color: lightText),
+        side: BorderSide(color: lightBorder.withValues(alpha: 0.5)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════
+  // DARK THEME — iOS True Black inspired
+  // ═══════════════════════════════════════════════
+  static ThemeData get darkTheme {
+    final base = ThemeData.dark(useMaterial3: true);
+    return base.copyWith(
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: iosBlueDark,
+        secondary: iosOrangeDark,
+        surface: darkSurface,
+        error: iosRedDark,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: darkText,
+        onError: Colors.white,
+        outline: darkBorder,
+      ),
+      scaffoldBackgroundColor: darkBg,
+      textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
+        displayLarge:  const TextStyle(color: darkText,          fontWeight: FontWeight.bold,  letterSpacing: -1.5),
+        displayMedium: const TextStyle(color: darkText,          fontWeight: FontWeight.bold,  letterSpacing: -0.8),
+        headlineLarge: const TextStyle(color: darkText,          fontWeight: FontWeight.w700,  letterSpacing: -0.5),
+        headlineMedium:const TextStyle(color: darkText,          fontWeight: FontWeight.w700),
+        headlineSmall: const TextStyle(color: darkText,          fontWeight: FontWeight.w600),
+        titleLarge:    const TextStyle(color: darkText,          fontWeight: FontWeight.w600),
+        titleMedium:   const TextStyle(color: darkText,          fontWeight: FontWeight.w500),
+        bodyLarge:     const TextStyle(color: darkText),
+        bodyMedium:    const TextStyle(color: darkTextSecondary),
+        bodySmall:     const TextStyle(color: darkTextTertiary),
+        labelLarge:    const TextStyle(color: darkText,          fontWeight: FontWeight.w600),
+        labelSmall:    const TextStyle(color: darkTextSecondary, letterSpacing: 0.5),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: darkSurface,
+        foregroundColor: darkText,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: iosBlueDark),
+        titleTextStyle: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: darkText,
+          letterSpacing: -0.3,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: darkSurface,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: darkBorder.withValues(alpha: 0.8)),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: iosBlueDark,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: iosBlueDark,
+          side: const BorderSide(color: iosBlueDark, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: iosBlueDark,
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface2,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: darkBorder.withValues(alpha: 0.8)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: iosBlueDark, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: TextStyle(color: darkTextSecondary.withValues(alpha: 0.6)),
+        labelStyle: const TextStyle(color: darkTextSecondary),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: iosBlueDark,
         foregroundColor: Colors.white,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: surfaceLight,
-        contentTextStyle: const TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
+        backgroundColor: darkSurface2,
+        contentTextStyle: const TextStyle(color: darkText, fontWeight: FontWeight.w500),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
         elevation: 8,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: surface,
+        backgroundColor: darkSurface,
         elevation: 16,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: darkBorder.withValues(alpha: 0.6)),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: background,
-        selectedItemColor: primary,
-        unselectedItemColor: textSecondary,
+        backgroundColor: darkSurface,
+        selectedItemColor: iosBlueDark,
+        unselectedItemColor: darkTextSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
       ),
       dividerTheme: DividerThemeData(
-        color: Colors.white.withValues(alpha: 0.06),
-        thickness: 1,
-        space: 24,
+        color: darkBorder.withValues(alpha: 0.6),
+        thickness: 0.5,
+        space: 1,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((s) => Colors.white),
+        trackColor: WidgetStateProperty.resolveWith((s) =>
+          s.contains(WidgetState.selected) ? iosGreenDark : darkBorder),
+      ),
+      listTileTheme: const ListTileThemeData(
+        tileColor: Colors.transparent,
+        iconColor: iosBlueDark,
+        textColor: darkText,
+      ),
+      tabBarTheme: const TabBarThemeData(
+        indicatorColor: iosBlueDark,
+        labelColor: iosBlueDark,
+        unselectedLabelColor: darkTextSecondary,
+        indicatorSize: TabBarIndicatorSize.label,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: iosBlueDark),
+      chipTheme: ChipThemeData(
+        backgroundColor: darkSurface2,
+        labelStyle: const TextStyle(color: darkText),
+        side: BorderSide(color: darkBorder.withValues(alpha: 0.8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: surfaceLight,
+        color: darkSurface2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: darkBorder.withValues(alpha: 0.6)),
         ),
         elevation: 16,
       ),
-      dropdownMenuTheme: DropdownMenuThemeData(
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: surfaceLight,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
     );
   }
+
+  // ─── CONTEXT HELPERS ──────────────────────────────────────
+  // Use these in widgets instead of hardcoded colors.
+  static bool isDark(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
+
+  static Color bg(BuildContext context) =>
+    isDark(context) ? darkBg : lightBg;
+
+  static Color surfaceColor(BuildContext context) =>
+    isDark(context) ? darkSurface : lightSurface;
+
+  static Color surface2Color(BuildContext context) =>
+    isDark(context) ? darkSurface2 : lightSurface2;
+
+  static Color textColor(BuildContext context) =>
+    isDark(context) ? darkText : lightText;
+
+  static Color textMuted(BuildContext context) =>
+    isDark(context) ? darkTextSecondary : lightTextSecondary;
+
+  static Color borderColor(BuildContext context) =>
+    isDark(context) ? darkBorder : lightBorder;
+
+  static Color primaryColor(BuildContext context) =>
+    isDark(context) ? iosBlueDark : iosBlue;
+
+  static Color successColor(BuildContext context) =>
+    isDark(context) ? iosGreenDark : iosGreen;
+
+  static Color errorColor(BuildContext context) =>
+    isDark(context) ? iosRedDark : iosRed;
+
+  static Color warningColor(BuildContext context) =>
+    isDark(context) ? iosOrangeDark : iosOrange;
 }
