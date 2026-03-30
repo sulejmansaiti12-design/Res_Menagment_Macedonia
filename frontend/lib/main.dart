@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import 'config/app_theme.dart';
+import 'providers/theme_provider.dart';
 import 'services/api_client.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
@@ -29,20 +30,14 @@ void main() async {
   HttpOverrides.global = MyHttpOverrides();
   await EasyLocalization.ensureInitialized();
 
-  // Initialize native notifications on ALL platforms (Android, iOS, Windows, etc.)
   if (!kIsWeb) {
-    try {
-      await NotificationService.instance.initialize();
-    } catch (e) {
+    try { await NotificationService.instance.initialize(); } catch (e) {
       debugPrint('Notification service init failed: $e');
     }
   }
 
-  // Background service only works on Android/iOS
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    try {
-      await initializeBackgroundService();
-    } catch (e) {
+    try { await initializeBackgroundService(); } catch (e) {
       debugPrint('Background service init failed: $e');
     }
   }
@@ -51,12 +46,13 @@ void main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: const [Locale('en'), Locale('mk'), Locale('sq')], // Note: sq is standard for Albanian
+      supportedLocales: const [Locale('en'), Locale('mk'), Locale('sq')],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ],
         child: RestaurantApp(apiClient: apiClient),
       ),
@@ -70,13 +66,16 @@ class RestaurantApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     return MaterialApp(
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       title: 'Restaurant Manager',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme:      AppTheme.lightTheme,  // default: white iOS
+      darkTheme:  AppTheme.darkTheme,   // dark: black iOS
+      themeMode:  themeProvider.themeMode,
       initialRoute: '/',
       routes: {
         '/': (context) => const AppEntryScreen(),
@@ -93,7 +92,6 @@ class RestaurantApp extends StatelessWidget {
 
 class AppEntryScreen extends StatefulWidget {
   const AppEntryScreen({super.key});
-
   @override
   State<AppEntryScreen> createState() => _AppEntryScreenState();
 }
@@ -110,46 +108,44 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
   Future<void> _initialize() async {
     final auth = context.read<AuthProvider>();
     await auth.init();
-    if (mounted) {
-      setState(() => _initialized = true);
-    }
+    if (mounted) setState(() => _initialized = true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (!_initialized) {
       return Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: cs.surface,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 100,
-                height: 100,
+                width: 96, height: 96,
                 decoration: BoxDecoration(
-                  gradient: AppTheme.premiumGradient,
-                  borderRadius: BorderRadius.circular(24),
+                  gradient: const LinearGradient(
+                    colors: [AppTheme.iosBlue, AppTheme.iosPurple],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                      color: AppTheme.iosBlue.withValues(alpha: 0.3),
+                      blurRadius: 24, offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.restaurant, size: 50, color: Colors.white),
+                child: const Icon(Icons.restaurant_rounded, size: 48, color: Colors.white),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Restaurant Manager',
+              Text('Restaurant Manager',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const CircularProgressIndicator(color: AppTheme.primary),
+                  fontWeight: FontWeight.bold, color: cs.onSurface,
+                )),
+              const SizedBox(height: 20),
+              CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5),
             ],
           ),
         ),
@@ -159,19 +155,19 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         if (auth.isAuthenticated) {
-          // Route based on role
+          final api = ApiClient()..setToken(auth.token);
           switch (auth.userRole) {
             case 'owner':
             case 'admin':
-              return AdminHomeScreen(apiClient: ApiClient()..setToken(auth.token));
+              return AdminHomeScreen(apiClient: api);
             case 'waiter':
             case 'waiter_offtrack':
-              return WaiterHomeScreen(apiClient: ApiClient()..setToken(auth.token));
+              return WaiterHomeScreen(apiClient: api);
             case 'kitchen':
             case 'bar':
-              return OpsKitchenBarScreen(apiClient: ApiClient()..setToken(auth.token));
+              return OpsKitchenBarScreen(apiClient: api);
             case 'developer':
-              return DeveloperHomeScreen(apiClient: ApiClient()..setToken(auth.token));
+              return DeveloperHomeScreen(apiClient: api);
             default:
               return const LoginScreen();
           }
