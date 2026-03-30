@@ -1636,84 +1636,199 @@ class _ShiftHistoryTabState extends State<_ShiftHistoryTab> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryLight))
-        : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            itemCount: _shifts.isEmpty ? 1 : _shifts.length + 1,
-            itemBuilder: (ctx, i) {
-              if (i == 0) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 32),
-                  child: Text('Shift History', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                );
-              }
-
-              if (_shifts.isEmpty) return const SizedBox.shrink();
-
-              final shift = _shifts[i - 1];
-              final waiter = shift['waiter'] as Map?;
-              final zone = shift['zone'] as Map?;
-              final isActive = shift['endTime'] == null;
-              final total = shift['totalCashCollected']?.toString() ?? '0';
-              
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 32),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header — matches Order History style
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.premiumGradient,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.schedule_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(waiter?['name'] ?? 'Unknown Waiter', style: const TextStyle(color: Colors.white, fontSize: 16)),
-                        if (isActive)
-                          const Text('If active: Active', style: TextStyle(color: Colors.white, fontSize: 16)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Details
-                    Text('Zone: ${zone?['name'] ?? 'Unknown'}', style: const TextStyle(color: Colors.white, fontSize: 16)),
-                    const SizedBox(height: 4),
-                    Text('Start ${_formatDate(shift['startTime'] ?? '')}', style: const TextStyle(color: Colors.white, fontSize: 16)),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isActive ? 'End: Active.' : '*End: ${_formatDate(shift['endTime'] ?? '')}*',
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                        Text('Total by far: $total MKD', style: const TextStyle(color: Colors.white, fontSize: 16)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Action
-                    if (!isActive)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton(
-                          onPressed: () => _printShiftReceipt(shift),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          child: const Text('Print', style: TextStyle(fontSize: 16)),
-                        ),
-                      ),
+                    Text('Shift History', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    SizedBox(height: 4),
+                    Text('Complete log of all waiter shifts', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
                   ],
                 ),
-              );
-            },
-          );
+              ),
+              IconButton(
+                onPressed: _loadShifts,
+                icon: const Icon(Icons.refresh_rounded, color: AppTheme.primaryLight),
+                tooltip: 'Refresh',
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Content
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+                : _shifts.isEmpty
+                    ? const Center(child: Text('No shift history yet', style: TextStyle(color: AppTheme.textSecondary)))
+                    : RefreshIndicator(
+                        onRefresh: _loadShifts,
+                        child: ListView.builder(
+                          itemCount: _shifts.length,
+                          itemBuilder: (ctx, i) => _buildShiftCard(_shifts[i]),
+                        ),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShiftCard(Map<String, dynamic> shift) {
+    final waiter = shift['waiter'] as Map?;
+    final zone = shift['zone'] as Map?;
+    final isActive = shift['endTime'] == null;
+    final total = shift['totalCashCollected']?.toString() ?? '0';
+    final fiscal = shift['totalFiscal']?.toString() ?? '0';
+    final offTrack = shift['totalOffTrack']?.toString() ?? '0';
+    final waiterName = waiter?['name'] as String? ?? 'Unknown';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: isActive ? AppTheme.success : AppTheme.textSecondary,
+          child: Text(
+            waiterName[0].toUpperCase(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(waiterName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppTheme.success.withValues(alpha: 0.15)
+                    : AppTheme.textSecondary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                isActive ? 'ACTIVE' : 'COMPLETED',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isActive ? AppTheme.success : AppTheme.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          '${zone?['name'] ?? 'Unknown Zone'} • ${_formatDate(shift['startTime'] ?? '')}',
+          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Stat boxes — same pattern as Waiters tab
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _shiftStat('Fiscal', '$fiscal MKD', AppTheme.success),
+                    _shiftStat('Off-Track', '$offTrack MKD', AppTheme.error),
+                    _shiftStat('Total', '$total MKD', AppTheme.accent),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Time details
+                Row(
+                  children: [
+                    const Icon(Icons.login_rounded, size: 14, color: AppTheme.textSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Start: ${_formatDate(shift['startTime'] ?? '')}',
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      isActive ? Icons.timelapse_rounded : Icons.logout_rounded,
+                      size: 14,
+                      color: isActive ? AppTheme.success : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isActive ? 'Currently active' : 'End: ${_formatDate(shift['endTime'] ?? '')}',
+                      style: TextStyle(
+                        color: isActive ? AppTheme.success : AppTheme.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Print action — only for completed shifts
+                if (!isActive) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _printShiftReceipt(shift),
+                      icon: const Icon(Icons.print_rounded, size: 18),
+                      label: const Text('Print Shift Receipt'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shiftStat(String label, String value, Color color) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 100),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+          Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+        ],
+      ),
+    );
   }
 
   String _formatDate(String dateStr) {
     if (dateStr.isEmpty) return '';
     try {
       final d = DateTime.parse(dateStr).toLocal();
-      return '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}:${d.second.toString().padLeft(2, '0')}';
+      return '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
     } catch (_) {
       return dateStr;
     }
