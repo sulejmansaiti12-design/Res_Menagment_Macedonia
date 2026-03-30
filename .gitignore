@@ -1,0 +1,29 @@
+## Secrets
+.env
+backend/.env
+backend/config/runtime-settings.json
+
+## Node
+backend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+## Flutter/Dart
+frontend/.dart_tool/
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.pub-cache/
+frontend/.pub/
+frontend/coverage/
+
+## IDE
+.vscode/
+.idea/
+
+## OS
+Thumbs.db
+Desktop.ini
+
