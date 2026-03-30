@@ -5,9 +5,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../config/app_theme.dart';
-import '../../services/api_client.dart';
 import '../../providers/auth_provider.dart';
-import '../shared/settings_screen.dart';
+import '../../providers/theme_provider.dart';
+import '../../services/api_client.dart';
 import 'analytics_screen.dart';
 import 'advanced_reports_screen.dart';
 import 'ops_kitchen_bar_screen.dart';
@@ -18,6 +18,27 @@ import 'end_of_day_screen.dart';
 import 'qr_print_screen.dart';
 import 'tabs/dashboard_tab.dart';
 
+// ─────────────────────────────────────────────────────────────
+// ROUTE KEYS
+// ─────────────────────────────────────────────────────────────
+const _kDashboard      = 'dashboard';
+const _kTableMap       = 'table_map';
+const _kRequests       = 'requests';
+const _kRevenue        = 'revenue';
+const _kAnalytics      = 'analytics_full';
+const _kZReports       = 'eod';
+const _kFiskal         = 'fiskal';
+const _kExportReports  = 'advanced_reports';
+const _kStaff          = 'waiters';
+const _kShiftHistory   = 'shift_history';
+const _kMenu           = 'menu';
+const _kPrinters       = 'printers';
+const _kQR             = 'qr_print';
+const _kSettings       = 'settings';
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN HOME SCREEN
+// ─────────────────────────────────────────────────────────────
 class AdminHomeScreen extends StatefulWidget {
   final ApiClient apiClient;
   const AdminHomeScreen({super.key, required this.apiClient});
@@ -27,296 +48,95 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  String _currentRoute = 'dashboard';
+  String _route = _kDashboard;
 
-  Widget _buildCurrentScreen(ApiClient api, AuthProvider auth, bool isOwner) {
-    switch (_currentRoute) {
-      case 'dashboard':        return DashboardTab(apiClient: api, auth: auth);
-      case 'table_map':        return _MasterFloorPlanScreen(apiClient: api);
-      case 'requests':         return OpsRequestsScreen(apiClient: api);
-      case 'waiters':          return _WaitersTab(apiClient: api);
-      case 'shift_history':    return _ShiftHistoryTab(apiClient: api);
-      case 'order_history':    return _OrderHistoryTab(apiClient: api);
-      case 'revenue':          return _RevenueTab(apiClient: api, isOwner: isOwner);
-      case 'analytics_full':   return AnalyticsScreen(apiClient: api);
-      case 'eod':              return EndOfDayScreen(apiClient: api, isOwner: isOwner);
-      case 'advanced_reports': return AdvancedReportsScreen(apiClient: api);
-      case 'menu':             return _MenuManagementTab(apiClient: api);
-      case 'printers':         return PrinterSetupScreen(apiClient: api);
-      case 'qr_print':         return _PrintQRTab(apiClient: api);
-      default:                 return DashboardTab(apiClient: api, auth: auth);
-    }
-  }
+  void _go(String route) => setState(() => _route = route);
 
-  void _openSettings() async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (_) => const AppSettingsScreen()),
-    );
-    if (result != null && mounted) {
-      setState(() => _currentRoute = result);
+  Widget _buildContent(ApiClient api, AuthProvider auth, bool isOwner) {
+    switch (_route) {
+      case _kDashboard:     return DashboardTab(apiClient: api, auth: auth);
+      case _kTableMap:      return _MasterFloorPlanScreen(apiClient: api);
+      case _kRequests:      return OpsRequestsScreen(apiClient: api);
+      case _kRevenue:       return _RevenueTab(apiClient: api, isOwner: isOwner);
+      case _kAnalytics:     return AnalyticsScreen(apiClient: api);
+      case _kZReports:      return EndOfDayScreen(apiClient: api, isOwner: isOwner);
+      case _kFiskal:        return EndOfDayScreen(apiClient: api, isOwner: isOwner);
+      case _kExportReports: return AdvancedReportsScreen(apiClient: api);
+      case _kStaff:         return _WaitersTab(apiClient: api);
+      case _kShiftHistory:  return _ShiftHistoryTab(apiClient: api);
+      case _kMenu:          return _MenuManagementTab(apiClient: api);
+      case _kPrinters:      return PrinterSetupScreen(apiClient: api);
+      case _kQR:            return _PrintQRTab(apiClient: api);
+      case _kSettings:      return _SettingsTab();
+      default:              return DashboardTab(apiClient: api, auth: auth);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+    final auth    = context.watch<AuthProvider>();
     final isOwner = auth.userRole == 'owner';
     final isDesktop = MediaQuery.of(context).size.width >= 800;
-    final isDark = AppTheme.isDark(context);
-
-    // iOS-adaptive colors
-    final sidebarBg = isDark
-      ? AppTheme.darkSurface.withValues(alpha: 0.92)
-      : AppTheme.lightSurface.withValues(alpha: 0.92);
-    final sidebarBorder = AppTheme.borderColor(context);
-    final contentBg = AppTheme.bg(context);
+    final api     = widget.apiClient;
+    final cs      = Theme.of(context).colorScheme;
+    final isDark  = AppTheme.isDark(context);
 
     if (!isDesktop) {
       return Scaffold(
-        backgroundColor: contentBg,
-        appBar: _currentRoute == 'dashboard' ? null : AppBar(
+        backgroundColor: AppTheme.bg(context),
+        appBar: _route == _kDashboard ? null : AppBar(
           backgroundColor: AppTheme.surfaceColor(context),
           title: Row(
             children: [
-              Icon(Icons.restaurant_rounded,
-                color: AppTheme.primaryColor(context), size: 18),
+              Icon(Icons.restaurant_rounded, color: cs.primary, size: 20),
               const SizedBox(width: 8),
-              Text(isOwner ? 'Owner Dashboard' : 'Admin Dashboard',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              Text(
+                isOwner ? 'Owner Portal' : 'Admin Portal',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textColor(context),
+                ),
+              ),
             ],
           ),
           actions: [
-            IconButton(
-              onPressed: _openSettings,
-              icon: Icon(Icons.person_circle_outline,
-                color: AppTheme.primaryColor(context), size: 26),
-              tooltip: 'Settings',
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: _UserAvatar(name: auth.userName, isOwner: isOwner, size: 32),
             ),
           ],
         ),
-        body: _buildCurrentScreen(widget.apiClient, auth, isOwner),
-        bottomNavigationBar: _buildMobileBottomNav(isOwner, auth),
+        body: _buildContent(api, auth, isOwner),
+        bottomNavigationBar: _MobileBottomNav(
+          current: _route,
+          isOwner: isOwner,
+          auth: auth,
+          onTap: _go,
+          onMore: () => _showMoreSheet(isOwner, auth),
+        ),
       );
     }
 
+    // ── Desktop: sidebar + content ──────────────────────────
     return Scaffold(
-      backgroundColor: contentBg,
+      backgroundColor: AppTheme.bg(context),
       body: Row(
         children: [
-          // ═══ SIDEBAR ════════════════════════════════
-          ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                width: 272,
-                decoration: BoxDecoration(
-                  color: sidebarBg,
-                  border: Border(right: BorderSide(
-                    color: sidebarBorder.withValues(alpha: 0.5))),
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    // Brand
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor(context).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36, height: 36,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppTheme.iosBlue, AppTheme.iosPurple],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.restaurant_rounded,
-                              color: Colors.white, size: 18),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('POS Manager',
-                                  style: TextStyle(
-                                    color: AppTheme.textColor(context),
-                                    fontWeight: FontWeight.w800, fontSize: 14)),
-                                Text(isOwner ? 'Owner Portal' : 'Admin Portal',
-                                  style: TextStyle(
-                                    color: AppTheme.textMuted(context),
-                                    fontSize: 11, fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // User profile
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface2Color(context),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.borderColor(context).withValues(alpha: 0.5)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 34, height: 34,
-                            decoration: BoxDecoration(
-                              color: isOwner
-                                ? AppTheme.iosOrange.withValues(alpha: 0.2)
-                                : AppTheme.iosBlue.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                auth.userName.isNotEmpty
-                                  ? auth.userName[0].toUpperCase() : 'A',
-                                style: TextStyle(
-                                  color: isOwner ? AppTheme.iosOrange : AppTheme.iosBlue,
-                                  fontWeight: FontWeight.w800, fontSize: 14),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(auth.userName,
-                                  style: TextStyle(
-                                    color: AppTheme.textColor(context),
-                                    fontWeight: FontWeight.w700, fontSize: 13),
-                                  overflow: TextOverflow.ellipsis),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: isOwner
-                                      ? AppTheme.iosOrange.withValues(alpha: 0.12)
-                                      : AppTheme.iosBlue.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    isOwner ? 'OWNER' : 'ADMIN',
-                                    style: TextStyle(
-                                      color: isOwner ? AppTheme.iosOrange : AppTheme.iosBlue,
-                                      fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Navigation
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        children: [
-                          // ── COMMAND CENTER
-                          _sectionLabel('COMMAND CENTER'),
-                          _navItem('dashboard', 'Dashboard',
-                            Icons.space_dashboard_rounded),
-                          _navItem('table_map', 'Floor Plan',
-                            Icons.table_restaurant_rounded),
-                          _navItem('requests', 'Notifications',
-                            Icons.notifications_rounded),
-
-                          _divider(),
-
-                          // ── FINANCIALS & FISCAL
-                          _sectionLabel('FINANCIALS & FISCAL'),
-                          _navItem('revenue', 'Revenue Hub',
-                            Icons.account_balance_wallet_rounded),
-                          _navItem('eod', 'Z-Reports / EOD',
-                            Icons.receipt_long_rounded,
-                            color: AppTheme.iosGreen),
-                          _navItem('order_history', 'Order History',
-                            Icons.history_rounded),
-                          _navItem('advanced_reports', 'Export Reports',
-                            Icons.assessment_rounded),
-
-                          _divider(),
-
-                          // ── ANALYTICS
-                          _sectionLabel('ANALYTICS'),
-                          _navItem('analytics_full', 'Sales Analytics',
-                            Icons.insights_rounded),
-
-                          _divider(),
-
-                          // ── TEAM
-                          _sectionLabel('TEAM'),
-                          _navItem('waiters', 'Staff Management',
-                            Icons.badge_rounded),
-                          _navItem('shift_history', 'Shift History',
-                            Icons.schedule_rounded),
-
-                          _divider(),
-
-                          // ── CONFIGURATION
-                          _sectionLabel('CONFIGURATION'),
-                          _navItem('menu', 'Menu Items',
-                            Icons.fastfood_rounded),
-                          _navItem('printers', 'Printer Setup',
-                            Icons.print_rounded),
-                          _navItem('qr_print', 'QR Codes',
-                            Icons.qr_code_rounded),
-
-                          const SizedBox(height: 12),
-                        ],
-                      ),
-                    ),
-
-                    // Settings + Logout
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        children: [
-                          _iconButton(
-                            icon: Icons.settings_rounded,
-                            label: 'Settings',
-                            color: AppTheme.primaryColor(context),
-                            bgColor: AppTheme.primaryColor(context).withValues(alpha: 0.1),
-                            onTap: _openSettings,
-                          ),
-                          const SizedBox(height: 6),
-                          _iconButton(
-                            icon: Icons.logout_rounded,
-                            label: 'Sign Out',
-                            color: AppTheme.errorColor(context),
-                            bgColor: AppTheme.errorColor(context).withValues(alpha: 0.08),
-                            onTap: () => auth.logout(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                  ],
-                ),
-              ),
-            ),
+          _Sidebar(
+            current: _route,
+            isOwner: isOwner,
+            auth: auth,
+            isDark: isDark,
+            onTap: _go,
           ),
-
-          // ═══ MAIN CONTENT ═══════════════════════════
           Expanded(
             child: ClipRRect(
-              child: _buildCurrentScreen(widget.apiClient, auth, isOwner),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                bottomLeft: Radius.circular(20),
+              ),
+              child: _buildContent(api, auth, isOwner),
             ),
           ),
         ],
@@ -324,68 +144,371 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _sectionLabel(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
-      child: Text(title,
-        style: TextStyle(
-          color: AppTheme.textMuted(context).withValues(alpha: 0.6),
-          fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.4)),
+  // ── Mobile bottom-sheet "More" ──────────────────────────────
+  void _showMoreSheet(bool isOwner, AuthProvider auth) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _MoreSheet(
+        current: _route,
+        isOwner: isOwner,
+        auth: auth,
+        onTap: (r) {
+          _go(r);
+          Navigator.pop(ctx);
+        },
+      ),
     );
   }
+}
 
-  Widget _divider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: Container(
-        height: 0.5,
-        color: AppTheme.borderColor(context).withValues(alpha: 0.5)),
+// ─────────────────────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────────────────────
+class _Sidebar extends StatelessWidget {
+  final String current;
+  final bool isOwner;
+  final AuthProvider auth;
+  final bool isDark;
+  final ValueChanged<String> onTap;
+
+  const _Sidebar({
+    required this.current,
+    required this.isOwner,
+    required this.auth,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final surface = AppTheme.surfaceColor(context);
+    final border = AppTheme.borderColor(context);
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          width: 272,
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppTheme.darkSurface.withValues(alpha: 0.92)
+                : AppTheme.lightSurface.withValues(alpha: 0.96),
+            border: Border(right: BorderSide(color: border.withValues(alpha: 0.5))),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                // ── Brand ──────────────────────────────────
+                _SidebarBrand(isOwner: isOwner),
+                const SizedBox(height: 12),
+                // ── User card ──────────────────────────────
+                _UserCard(auth: auth, isOwner: isOwner),
+                const SizedBox(height: 12),
+                // ── Nav ────────────────────────────────────
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    children: [
+                      if (isOwner) ...[
+                        _SectionLabel('OVERVIEW'),
+                        _NavItem(route: _kDashboard,     label: 'Dashboard',        icon: Icons.space_dashboard_rounded,         current: current, onTap: onTap),
+                        _NavItem(route: _kAnalytics,     label: 'Sales Analytics',  icon: Icons.insights_rounded,                current: current, onTap: onTap),
+                        _NavItem(route: _kStaff,         label: 'Staff',            icon: Icons.badge_rounded,                   current: current, onTap: onTap),
+                        _NavItem(route: _kRevenue,       label: 'Revenue Hub',      icon: Icons.account_balance_wallet_rounded,  current: current, onTap: onTap),
+                        _NavItem(route: _kExportReports, label: 'Export Reports',   icon: Icons.assessment_rounded,              current: current, onTap: onTap),
+                      ] else ...[
+                        _SectionLabel('COMMAND CENTER'),
+                        _NavItem(route: _kDashboard,  label: 'Dashboard',       icon: Icons.space_dashboard_rounded,        current: current, onTap: onTap),
+                        _NavItem(route: _kTableMap,   label: 'Floor Plan',      icon: Icons.table_restaurant_rounded,       current: current, onTap: onTap),
+                        _NavItem(route: _kRequests,   label: 'Notifications',   icon: Icons.notifications_active_rounded,   current: current, onTap: onTap),
+                        _SidebarDivider(),
+                        _SectionLabel('FINANCIALS & FISCAL'),
+                        _NavItem(route: _kRevenue,       label: 'Revenue & Payments', icon: Icons.account_balance_wallet_rounded, current: current, onTap: onTap),
+                        _NavItem(route: _kAnalytics,     label: 'Sales Analytics',    icon: Icons.insights_rounded,               current: current, onTap: onTap),
+                        _NavItem(route: _kZReports,      label: 'Z-Reports (EOD)',     icon: Icons.summarize_rounded,              current: current, onTap: onTap),
+                        _NavItem(route: _kFiskal,        label: 'Fiskal Settings',     icon: Icons.receipt_long_rounded,           current: current, onTap: onTap, accent: AppTheme.iosGreen),
+                        _NavItem(route: _kExportReports, label: 'Export Reports',      icon: Icons.assessment_rounded,             current: current, onTap: onTap),
+                        _SidebarDivider(),
+                        _SectionLabel('TEAM'),
+                        _NavItem(route: _kStaff,        label: 'Staff Management', icon: Icons.badge_rounded,    current: current, onTap: onTap),
+                        _NavItem(route: _kShiftHistory, label: 'Shift History',    icon: Icons.history_rounded,  current: current, onTap: onTap),
+                        _SidebarDivider(),
+                        _SectionLabel('CONFIGURATION'),
+                        _NavItem(route: _kMenu,     label: 'Menu Items',    icon: Icons.fastfood_rounded,   current: current, onTap: onTap),
+                        _NavItem(route: _kPrinters, label: 'Printer Setup', icon: Icons.print_rounded,      current: current, onTap: onTap),
+                        _NavItem(route: _kQR,       label: 'QR Codes',      icon: Icons.qr_code_rounded,    current: current, onTap: onTap),
+                      ],
+                      const SizedBox(height: 8),
+                      _SidebarDivider(),
+                      _NavItem(route: _kSettings, label: 'Settings', icon: Icons.settings_rounded, current: current, onTap: onTap),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                // ── Logout ─────────────────────────────────
+                _LogoutButton(auth: auth),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
+}
 
-  Widget _navItem(String route, String label, IconData icon, {Color? color}) {
-    final isSelected = _currentRoute == route;
-    final primary = color ?? AppTheme.primaryColor(context);
+// ─────────────────────────────────────────────────────────────
+// SIDEBAR BRAND
+// ─────────────────────────────────────────────────────────────
+class _SidebarBrand extends StatelessWidget {
+  final bool isOwner;
+  const _SidebarBrand({required this.isOwner});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.only(bottom: 1),
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [cs.primary, AppTheme.iosGreen],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [BoxShadow(color: cs.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
+            ),
+            child: const Icon(Icons.restaurant_rounded, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('POS Manager',
+                  style: TextStyle(color: AppTheme.textColor(context), fontWeight: FontWeight.w800, fontSize: 14)),
+                const SizedBox(height: 2),
+                Text(
+                  isOwner ? 'Owner Portal' : 'Admin Portal',
+                  style: TextStyle(color: AppTheme.textMuted(context), fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// USER CARD
+// ─────────────────────────────────────────────────────────────
+class _UserCard extends StatelessWidget {
+  final AuthProvider auth;
+  final bool isOwner;
+  const _UserCard({required this.auth, required this.isOwner});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final roleColor = isOwner ? AppTheme.iosOrange : AppTheme.iosBlue;
+    final roleLabel = isOwner ? 'OWNER' : 'ADMIN';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.bg(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor(context).withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          _UserAvatar(name: auth.userName, isOwner: isOwner, size: 36),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(auth.userName,
+                  style: TextStyle(color: AppTheme.textColor(context), fontWeight: FontWeight.w700, fontSize: 13),
+                  overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: roleColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(roleLabel,
+                    style: TextStyle(color: roleColor, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// USER AVATAR
+// ─────────────────────────────────────────────────────────────
+class _UserAvatar extends StatelessWidget {
+  final String name;
+  final bool isOwner;
+  final double size;
+  const _UserAvatar({required this.name, required this.isOwner, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isOwner ? AppTheme.iosOrange : AppTheme.iosBlue;
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withValues(alpha: 0.75)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(size * 0.28),
+      ),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : 'A',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * 0.45),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SIDEBAR SECTION LABEL
+// ─────────────────────────────────────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, bottom: 4, top: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: AppTheme.textMuted(context).withValues(alpha: 0.55),
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.6,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SIDEBAR DIVIDER
+// ─────────────────────────────────────────────────────────────
+class _SidebarDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: AppTheme.borderColor(context).withValues(alpha: 0.5),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// NAV ITEM
+// ─────────────────────────────────────────────────────────────
+class _NavItem extends StatelessWidget {
+  final String route;
+  final String label;
+  final IconData icon;
+  final String current;
+  final ValueChanged<String> onTap;
+  final Color? accent;
+
+  const _NavItem({
+    required this.route,
+    required this.label,
+    required this.icon,
+    required this.current,
+    required this.onTap,
+    this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isSelected = current == route;
+    final iconColor = accent ?? cs.primary;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
         child: InkWell(
-          onTap: () => setState(() => _currentRoute = route),
+          onTap: () => onTap(route),
           borderRadius: BorderRadius.circular(10),
+          hoverColor: cs.primary.withValues(alpha: 0.04),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected
-                ? primary.withValues(alpha: 0.1)
-                : Colors.transparent,
+              color: isSelected ? cs.primary.withValues(alpha: 0.10) : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
+              border: isSelected ? Border.all(color: cs.primary.withValues(alpha: 0.15)) : null,
             ),
             child: Row(
               children: [
+                // Active indicator bar
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  width: 3, height: isSelected ? 18 : 0,
-                  margin: const EdgeInsets.only(right: 8),
+                  width: 3,
+                  height: isSelected ? 18 : 0,
+                  margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
-                    color: primary,
-                    borderRadius: BorderRadius.circular(2)),
+                    color: isSelected ? iconColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                Icon(icon,
-                  color: isSelected ? primary
-                    : AppTheme.textMuted(context).withValues(alpha: 0.6),
-                  size: 18),
-                const SizedBox(width: 9),
+                Icon(
+                  icon,
+                  size: 19,
+                  color: isSelected ? iconColor : AppTheme.textMuted(context).withValues(alpha: 0.6),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(label,
+                  child: Text(
+                    label,
                     style: TextStyle(
-                      color: isSelected
-                        ? AppTheme.textColor(context)
-                        : AppTheme.textMuted(context),
+                      color: isSelected ? AppTheme.textColor(context) : AppTheme.textMuted(context),
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 13)),
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -394,209 +517,496 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
+}
 
-  Widget _iconButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required Color bgColor,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 17),
-              const SizedBox(width: 8),
-              Text(label,
-                style: TextStyle(
-                  color: color, fontWeight: FontWeight.w700, fontSize: 13)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+// ─────────────────────────────────────────────────────────────
+// LOGOUT BUTTON
+// ─────────────────────────────────────────────────────────────
+class _LogoutButton extends StatelessWidget {
+  final AuthProvider auth;
+  const _LogoutButton({required this.auth});
 
-  // MOBILE NAV
-  int _currentMobileTabIndex() {
-    if (_currentRoute == 'dashboard') return 0;
-    if (_currentRoute == 'table_map') return 1;
-    if (_currentRoute == 'revenue' || _currentRoute == 'eod') return 2;
-    return 3;
-  }
-
-  Widget _buildMobileBottomNav(bool isOwner, AuthProvider auth) {
-    return BottomNavigationBar(
-      currentIndex: _currentMobileTabIndex(),
-      onTap: (i) {
-        if (i == 0) setState(() => _currentRoute = 'dashboard');
-        else if (i == 1) setState(() => _currentRoute = 'table_map');
-        else if (i == 2) setState(() => _currentRoute = 'revenue');
-        else _showMobileMenuSheet(isOwner, auth);
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.space_dashboard_rounded), label: 'Dashboard'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.table_restaurant_rounded), label: 'Floors'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.account_balance_wallet_rounded), label: 'Revenue'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.menu_rounded), label: 'More'),
-      ],
-    );
-  }
-
-  void _showMobileMenuSheet(bool isOwner, AuthProvider auth) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.borderColor(context),
-                borderRadius: BorderRadius.circular(2))),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _SectionHeaderLabel('FINANCIALS & FISCAL'),
-                  _BottomSheetItem('revenue', 'Revenue Hub',
-                    Icons.account_balance_wallet_rounded, ctx),
-                  _BottomSheetItem('eod', 'Z-Reports / EOD',
-                    Icons.receipt_long_rounded, ctx),
-                  _BottomSheetItem('order_history', 'Order History',
-                    Icons.history_rounded, ctx),
-                  _BottomSheetItem('advanced_reports', 'Export Reports',
-                    Icons.assessment_rounded, ctx),
-                  _DividerLine(),
-                  _SectionHeaderLabel('ANALYTICS'),
-                  _BottomSheetItem('analytics_full', 'Sales Analytics',
-                    Icons.insights_rounded, ctx),
-                  _DividerLine(),
-                  _SectionHeaderLabel('TEAM'),
-                  _BottomSheetItem('waiters', 'Staff Management',
-                    Icons.badge_rounded, ctx),
-                  _BottomSheetItem('shift_history', 'Shift History',
-                    Icons.schedule_rounded, ctx),
-                  _DividerLine(),
-                  _SectionHeaderLabel('CONFIGURATION'),
-                  _BottomSheetItem('menu', 'Menu Items',
-                    Icons.fastfood_rounded, ctx),
-                  _BottomSheetItem('printers', 'Printer Setup',
-                    Icons.print_rounded, ctx),
-                  _BottomSheetItem('qr_print', 'QR Codes',
-                    Icons.qr_code_rounded, ctx),
-                  _DividerLine(),
-                  ListTile(
-                    leading: Icon(Icons.settings_rounded,
-                      color: AppTheme.primaryColor(context)),
-                    title: const Text('Settings',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _openSettings();
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.logout_rounded,
-                      color: AppTheme.errorColor(context)),
-                    title: Text('Sign Out',
-                      style: TextStyle(
-                        color: AppTheme.errorColor(context),
-                        fontWeight: FontWeight.w600)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      auth.logout();
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+  @override
+  Widget build(BuildContext context) {
+    final errColor = AppTheme.errorColor(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => auth.logout(),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            decoration: BoxDecoration(
+              color: errColor.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: errColor.withValues(alpha: 0.10)),
             ),
-          ],
+            child: Row(
+              children: [
+                Icon(Icons.logout_rounded, color: errColor.withValues(alpha: 0.8), size: 18),
+                const SizedBox(width: 10),
+                Text('Sign Out',
+                  style: TextStyle(color: errColor.withValues(alpha: 0.85), fontWeight: FontWeight.w700, fontSize: 13)),
+              ],
+            ),
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _SectionHeaderLabel(String t) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-    child: Text(t,
-      style: TextStyle(
-        color: AppTheme.textMuted(context),
-        fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
-  );
-
-  Widget _DividerLine() => Divider(
-    color: AppTheme.borderColor(context).withValues(alpha: 0.5), height: 16);
-
-  Widget _BottomSheetItem(String route, String label, IconData icon, BuildContext ctx) {
-    final isSelected = _currentRoute == route;
-    return ListTile(
-      leading: Icon(icon,
-        color: isSelected
-          ? AppTheme.primaryColor(context)
-          : AppTheme.textMuted(context)),
-      title: Text(label,
-        style: TextStyle(
-          color: isSelected ? AppTheme.textColor(context) : AppTheme.textMuted(context),
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500)),
-      tileColor: isSelected
-        ? AppTheme.primaryColor(context).withValues(alpha: 0.08)
-        : Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      onTap: () {
-        setState(() => _currentRoute = route);
-        Navigator.pop(ctx);
-      },
     );
   }
 }
 
-// ==================== MASTER FLOOR PLAN HUB ====================
+// ─────────────────────────────────────────────────────────────
+// MOBILE BOTTOM NAV
+// ─────────────────────────────────────────────────────────────
+class _MobileBottomNav extends StatelessWidget {
+  final String current;
+  final bool isOwner;
+  final AuthProvider auth;
+  final ValueChanged<String> onTap;
+  final VoidCallback onMore;
+
+  const _MobileBottomNav({
+    required this.current,
+    required this.isOwner,
+    required this.auth,
+    required this.onTap,
+    required this.onMore,
+  });
+
+  int get _index {
+    if (current == _kDashboard) return 0;
+    if (current == _kTableMap)  return 1;
+    if (current == _kRevenue)   return 2;
+    return 3;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return BottomNavigationBar(
+      backgroundColor: AppTheme.surfaceColor(context),
+      selectedItemColor: cs.primary,
+      unselectedItemColor: AppTheme.textMuted(context),
+      type: BottomNavigationBarType.fixed,
+      currentIndex: _index,
+      selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: const TextStyle(fontSize: 11),
+      elevation: 0,
+      onTap: (i) {
+        if (i == 0) onTap(_kDashboard);
+        else if (i == 1) onTap(_kTableMap);
+        else if (i == 2) onTap(_kRevenue);
+        else onMore();
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.space_dashboard_rounded), label: 'Dashboard'),
+        BottomNavigationBarItem(icon: Icon(Icons.table_restaurant_rounded), label: 'Floors'),
+        BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Revenue'),
+        BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'More'),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MORE SHEET (mobile)
+// ─────────────────────────────────────────────────────────────
+class _MoreSheet extends StatelessWidget {
+  final String current;
+  final bool isOwner;
+  final AuthProvider auth;
+  final ValueChanged<String> onTap;
+
+  const _MoreSheet({
+    required this.current,
+    required this.isOwner,
+    required this.auth,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = AppTheme.surfaceColor(context);
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.82,
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: AppTheme.borderColor(context),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+            child: Row(
+              children: [
+                Text('More', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                if (isOwner) ...[
+                  _SheetSection('OVERVIEW'),
+                  _SheetItem(route: _kAnalytics,     label: 'Sales Analytics',  icon: Icons.insights_rounded,               current: current, onTap: onTap),
+                  _SheetItem(route: _kStaff,         label: 'Staff',            icon: Icons.badge_rounded,                  current: current, onTap: onTap),
+                  _SheetItem(route: _kExportReports, label: 'Export Reports',   icon: Icons.assessment_rounded,             current: current, onTap: onTap),
+                ] else ...[
+                  _SheetSection('OPERATIONS'),
+                  _SheetItem(route: _kRequests,  label: 'Notifications', icon: Icons.notifications_active_rounded, current: current, onTap: onTap),
+                  _SheetSection('FINANCIALS & FISCAL'),
+                  _SheetItem(route: _kAnalytics,     label: 'Sales Analytics',    icon: Icons.insights_rounded,               current: current, onTap: onTap),
+                  _SheetItem(route: _kZReports,      label: 'Z-Reports (EOD)',     icon: Icons.summarize_rounded,              current: current, onTap: onTap),
+                  _SheetItem(route: _kFiskal,        label: 'Fiskal Settings',     icon: Icons.receipt_long_rounded,           current: current, onTap: onTap, accent: AppTheme.iosGreen),
+                  _SheetItem(route: _kExportReports, label: 'Export Reports',      icon: Icons.assessment_rounded,             current: current, onTap: onTap),
+                  _SheetSection('TEAM'),
+                  _SheetItem(route: _kStaff,        label: 'Staff Management', icon: Icons.badge_rounded,   current: current, onTap: onTap),
+                  _SheetItem(route: _kShiftHistory, label: 'Shift History',    icon: Icons.history_rounded, current: current, onTap: onTap),
+                  _SheetSection('CONFIGURATION'),
+                  _SheetItem(route: _kMenu,     label: 'Menu Items',    icon: Icons.fastfood_rounded,  current: current, onTap: onTap),
+                  _SheetItem(route: _kPrinters, label: 'Printer Setup', icon: Icons.print_rounded,     current: current, onTap: onTap),
+                  _SheetItem(route: _kQR,       label: 'QR Codes',      icon: Icons.qr_code_rounded,   current: current, onTap: onTap),
+                ],
+                _SheetSection('ACCOUNT'),
+                _SheetItem(route: _kSettings, label: 'Settings', icon: Icons.settings_rounded, current: current, onTap: onTap),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () { Navigator.pop(context); auth.logout(); },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.errorColor(context),
+                      side: BorderSide(color: AppTheme.errorColor(context).withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: const Text('Sign Out'),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetSection extends StatelessWidget {
+  final String text;
+  const _SheetSection(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 4, left: 4),
+      child: Text(text,
+        style: TextStyle(
+          color: AppTheme.textMuted(context).withValues(alpha: 0.5),
+          fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.6,
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetItem extends StatelessWidget {
+  final String route, label;
+  final IconData icon;
+  final String current;
+  final ValueChanged<String> onTap;
+  final Color? accent;
+
+  const _SheetItem({
+    required this.route,
+    required this.label,
+    required this.icon,
+    required this.current,
+    required this.onTap,
+    this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isSelected = current == route;
+    final iconColor = accent ?? cs.primary;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? iconColor : AppTheme.textMuted(context), size: 22),
+      title: Text(label,
+        style: TextStyle(
+          color: isSelected ? AppTheme.textColor(context) : AppTheme.textMuted(context),
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 15,
+        ),
+      ),
+      tileColor: isSelected ? cs.primary.withValues(alpha: 0.07) : Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onTap: () => onTap(route),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SETTINGS TAB
+// ─────────────────────────────────────────────────────────────
+class _SettingsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final auth    = context.watch<AuthProvider>();
+    final theme   = context.watch<ThemeProvider>();
+    final cs      = Theme.of(context).colorScheme;
+    final isDark  = AppTheme.isDark(context);
+    final surface = AppTheme.surfaceColor(context);
+    final bg      = AppTheme.bg(context);
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // ── Header ─────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Text('Settings',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textColor(context),
+              )),
+          ),
+
+          // ── Appearance ─────────────────────────────────
+          _SettingsGroup(
+            label: 'APPEARANCE',
+            children: [
+              _SettingsTile(
+                icon: Icons.brightness_6_rounded,
+                title: 'Theme',
+                subtitle: theme.isDark ? 'Dark Mode' : theme.isLight ? 'Light Mode' : 'System',
+                trailing: _ThemeSegmentedControl(provider: theme),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Account ────────────────────────────────────
+          _SettingsGroup(
+            label: 'ACCOUNT',
+            children: [
+              _SettingsTile(
+                icon: Icons.person_rounded,
+                title: auth.userName,
+                subtitle: auth.userRole.toUpperCase(),
+              ),
+              _SettingsTile(
+                icon: Icons.logout_rounded,
+                title: 'Sign Out',
+                titleColor: AppTheme.errorColor(context),
+                iconColor: AppTheme.errorColor(context),
+                onTap: () => auth.logout(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Fiscal ─────────────────────────────────────
+          _SettingsGroup(
+            label: 'FISCAL & REPORTING',
+            children: [
+              _SettingsTile(
+                icon: Icons.receipt_long_rounded,
+                iconColor: AppTheme.iosGreen,
+                title: 'Fiscal Settings',
+                subtitle: 'Configure fiscal receipt parameters',
+              ),
+              _SettingsTile(
+                icon: Icons.summarize_rounded,
+                title: 'Z-Reports',
+                subtitle: 'End of day reports',
+              ),
+              _SettingsTile(
+                icon: Icons.print_rounded,
+                title: 'Printer Setup',
+                subtitle: 'Thermal printer configuration',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── App info ───────────────────────────────────
+          _SettingsGroup(
+            label: 'APP',
+            children: [
+              _SettingsTile(
+                icon: Icons.info_outline_rounded,
+                title: 'Restaurant Manager',
+                subtitle: 'Version 1.0.0',
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+  const _SettingsGroup({required this.label, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(label,
+            style: TextStyle(
+              color: AppTheme.textMuted(context).withValues(alpha: 0.55),
+              fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4,
+            )),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor(context),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.borderColor(context).withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            children: children.asMap().entries.map((e) {
+              final isLast = e.key == children.length - 1;
+              return Column(
+                children: [
+                  e.value,
+                  if (!isLast) Divider(
+                    height: 1, thickness: 0.5,
+                    indent: 52,
+                    color: AppTheme.borderColor(context).withValues(alpha: 0.5),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final Color? iconColor;
+  final Color? titleColor;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+    this.iconColor,
+    this.titleColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Container(
+        width: 34, height: 34,
+        decoration: BoxDecoration(
+          color: (iconColor ?? cs.primary).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: iconColor ?? cs.primary, size: 18),
+      ),
+      title: Text(title,
+        style: TextStyle(
+          color: titleColor ?? AppTheme.textColor(context),
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      subtitle: subtitle != null
+          ? Text(subtitle!, style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12))
+          : null,
+      trailing: trailing ?? (onTap != null ? Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted(context), size: 20) : null),
+    );
+  }
+}
+
+class _ThemeSegmentedControl extends StatelessWidget {
+  final ThemeProvider provider;
+  const _ThemeSegmentedControl({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SegmentedButton<ThemeMode>(
+      segments: const [
+        ButtonSegment(value: ThemeMode.light,  icon: Icon(Icons.light_mode_rounded, size: 16),  label: Text('Light')),
+        ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.auto_mode_rounded, size: 16),   label: Text('Auto')),
+        ButtonSegment(value: ThemeMode.dark,   icon: Icon(Icons.dark_mode_rounded, size: 16),   label: Text('Dark')),
+      ],
+      selected: {provider.themeMode},
+      onSelectionChanged: (s) => provider.setTheme(s.first),
+      style: ButtonStyle(
+        textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MASTER FLOOR PLAN
+// ─────────────────────────────────────────────────────────────
 class _MasterFloorPlanScreen extends StatelessWidget {
   final ApiClient apiClient;
   const _MasterFloorPlanScreen({required this.apiClient});
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: AppTheme.bg(context),
         appBar: AppBar(
-          title: const Text('Master Floor Plan Hub'),
-          bottom: const TabBar(
-            tabs: [
+          backgroundColor: AppTheme.surfaceColor(context),
+          title: Text('Master Floor Plan', style: TextStyle(color: AppTheme.textColor(context))),
+          bottom: TabBar(
+            tabs: const [
               Tab(text: 'LIVE MONITOR', icon: Icon(Icons.table_restaurant_rounded)),
               Tab(text: 'SETUP TABLES', icon: Icon(Icons.table_bar_rounded)),
-              Tab(text: 'SETUP ZONES', icon: Icon(Icons.grid_view_rounded)),
+              Tab(text: 'ZONES',        icon: Icon(Icons.grid_view_rounded)),
             ],
+            indicatorColor: cs.primary,
+            labelColor: cs.primary,
+            unselectedLabelColor: AppTheme.textMuted(context),
           ),
         ),
         body: TabBarView(
@@ -612,64 +1022,102 @@ class _MasterFloorPlanScreen extends StatelessWidget {
   }
 }
 
-// ==================== SHIFT HISTORY TAB ====================
+// ─────────────────────────────────────────────────────────────
+// SHIFT HISTORY STUB
+// ─────────────────────────────────────────────────────────────
 class _ShiftHistoryTab extends StatelessWidget {
   final ApiClient apiClient;
   const _ShiftHistoryTab({required this.apiClient});
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: AppTheme.bg(context),
+      appBar: AppBar(
+        backgroundColor: AppTheme.surfaceColor(context),
+        title: Text('Shift History', style: TextStyle(color: AppTheme.textColor(context))),
+      ),
       body: Center(
-        child: Text('Shift History coming soon',
-          style: TextStyle(fontSize: 16))),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history_rounded, size: 64, color: AppTheme.textMuted(context)),
+            const SizedBox(height: 16),
+            Text('No shift history yet', style: TextStyle(color: AppTheme.textMuted(context), fontSize: 16)),
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ==================== ORDER HISTORY TAB ====================
-class _OrderHistoryTab extends StatelessWidget {
-  final ApiClient apiClient;
-  const _OrderHistoryTab({required this.apiClient});
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Order History coming soon',
-          style: TextStyle(fontSize: 16))),
-    );
-  }
-}
-
-// ==================== REVENUE TAB ====================
+// ─────────────────────────────────────────────────────────────
+// REVENUE TAB STUB
+// ─────────────────────────────────────────────────────────────
 class _RevenueTab extends StatelessWidget {
   final ApiClient apiClient;
   final bool isOwner;
   const _RevenueTab({required this.apiClient, required this.isOwner});
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: AppTheme.bg(context),
+      appBar: AppBar(
+        backgroundColor: AppTheme.surfaceColor(context),
+        title: Text('Revenue & Payments', style: TextStyle(color: AppTheme.textColor(context))),
+      ),
       body: Center(
-        child: Text('Revenue Hub coming soon',
-          style: TextStyle(fontSize: 16))),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.account_balance_wallet_rounded, size: 64, color: cs.primary),
+            const SizedBox(height: 16),
+            Text('Revenue data loading...', style: TextStyle(color: AppTheme.textMuted(context), fontSize: 16)),
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ==================== PRINT QR TAB ====================
+// ─────────────────────────────────────────────────────────────
+// PRINT QR STUB
+// ─────────────────────────────────────────────────────────────
 class _PrintQRTab extends StatelessWidget {
   final ApiClient apiClient;
   const _PrintQRTab({required this.apiClient});
+
   @override
   Widget build(BuildContext context) {
-    return PrintQRScreen(apiClient: apiClient);
+    return Scaffold(
+      backgroundColor: AppTheme.bg(context),
+      appBar: AppBar(
+        backgroundColor: AppTheme.surfaceColor(context),
+        title: Text('QR Codes', style: TextStyle(color: AppTheme.textColor(context))),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.qr_code_rounded, size: 64, color: AppTheme.textMuted(context)),
+            const SizedBox(height: 16),
+            Text('QR management', style: TextStyle(color: AppTheme.textMuted(context), fontSize: 16)),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-// ==================== WAITERS TAB ====================
-
+// ─────────────────────────────────────────────────────────────
+// WAITERS TAB
+// ─────────────────────────────────────────────────────────────
 class _WaitersTab extends StatefulWidget {
   final ApiClient apiClient;
   const _WaitersTab({required this.apiClient});
+
   @override
   State<_WaitersTab> createState() => _WaitersTabState();
 }
@@ -679,125 +1127,206 @@ class _WaitersTabState extends State<_WaitersTab> {
   bool _isLoading = true;
 
   @override
-  void initState() { super.initState(); _loadWaiters(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  Future<void> _loadWaiters() async {
+  Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
       final res = await widget.apiClient.get('/admin/waiters');
       setState(() {
         _waiters = List<Map<String, dynamic>>.from(
-          (res['data']['waiters'] as List).map(
-            (w) => Map<String, dynamic>.from(w as Map)));
+          (res['data']['waiters'] as List).map((w) => Map<String, dynamic>.from(w as Map)),
+        );
         _isLoading = false;
       });
-    } catch (e) { setState(() => _isLoading = false); }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadWaiters,
-        child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _waiters.isEmpty
-            ? Center(child: Text('No waiters registered',
-                style: TextStyle(color: AppTheme.textMuted(context))))
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _waiters.length,
-                itemBuilder: (ctx, i) => _buildWaiterCard(_waiters[i]),
-              ),
+      backgroundColor: AppTheme.bg(context),
+      appBar: AppBar(
+        backgroundColor: AppTheme.surfaceColor(context),
+        title: Text('Staff Management', style: TextStyle(color: AppTheme.textColor(context))),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddWaiterDialog,
-        child: const Icon(Icons.person_add_rounded),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: cs.primary,
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5))
+            : _waiters.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.badge_rounded, size: 64, color: AppTheme.textMuted(context)),
+                        const SizedBox(height: 16),
+                        Text('No staff registered', style: TextStyle(color: AppTheme.textMuted(context), fontSize: 16)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _waiters.length,
+                    itemBuilder: (ctx, i) => _WaiterCard(
+                      waiter: _waiters[i],
+                      apiClient: widget.apiClient,
+                      onRefresh: _load,
+                    ),
+                  ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddDialog(context),
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.person_add_rounded),
+        label: const Text('Add Staff'),
       ),
     );
   }
 
-  Widget _buildWaiterCard(Map<String, dynamic> waiter) {
-    final activeShift = waiter['activeShift'] as Map<String, dynamic>?;
-    final isOnShift = activeShift != null;
-    final isOffTrack = waiter['role'] == 'waiter_offtrack';
-    final cash = activeShift?['totalCashCollected']?.toString() ?? '0';
-    final zone = activeShift?['zone'] as Map?;
+  void _showAddDialog(BuildContext context) {
+    final nameC = TextEditingController();
+    final userC = TextEditingController();
+    final passC = TextEditingController();
+    String role = 'waiter';
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, ss) => AlertDialog(
+          title: const Text('Add Staff Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name')),
+              const SizedBox(height: 12),
+              TextField(controller: userC, decoration: const InputDecoration(labelText: 'Username')),
+              const SizedBox(height: 12),
+              TextField(controller: passC, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: role,
+                decoration: const InputDecoration(labelText: 'Role'),
+                items: const [
+                  DropdownMenuItem(value: 'waiter', child: Text('Standard Waiter')),
+                  DropdownMenuItem(value: 'waiter_offtrack', child: Text('Waiter (Off-Track)')),
+                ],
+                onChanged: (v) => ss(() => role = v!),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await widget.apiClient.post('/admin/waiters', body: {
+                    'name': nameC.text, 'username': userC.text,
+                    'password': passC.text, 'role': role,
+                  });
+                  _load();
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor(context)),
+                  );
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// WAITER CARD
+// ─────────────────────────────────────────────────────────────
+class _WaiterCard extends StatelessWidget {
+  final Map<String, dynamic> waiter;
+  final ApiClient apiClient;
+  final VoidCallback onRefresh;
+  const _WaiterCard({required this.waiter, required this.apiClient, required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = waiter['activeShift'] as Map<String, dynamic>?;
+    final isOn = active != null;
+    final isOT = waiter['role'] == 'waiter_offtrack';
+    final name = waiter['name'] as String? ?? 'Staff';
+    final zone = (active?['zone'] as Map?)?['name'] ?? 'Unknown Zone';
+    final cash = active?['totalCashCollected']?.toString() ?? '0';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
+      color: AppTheme.surfaceColor(context),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: isOnShift
-            ? AppTheme.iosGreen
-            : AppTheme.textMuted(context).withValues(alpha: 0.3),
-          child: Text(
-            (waiter['name'] as String? ?? 'W')[0].toUpperCase(),
+          backgroundColor: isOn ? AppTheme.successColor(context) : AppTheme.textMuted(context),
+          child: Text(name[0].toUpperCase(),
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),
         title: Row(
           children: [
-            Text(waiter['name'] as String? ?? '',
-              style: const TextStyle(fontWeight: FontWeight.w700)),
-            if (isOffTrack) ...[
+            Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
+            if (isOT) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.iosRed.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6)),
-                child: const Text('OFF-TRACK',
-                  style: TextStyle(fontSize: 10, color: AppTheme.iosRed,
-                    fontWeight: FontWeight.w700)),
+                  color: AppTheme.errorColor(context).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text('OFF-TRACK',
+                  style: TextStyle(fontSize: 9, color: AppTheme.errorColor(context), fontWeight: FontWeight.w800)),
               ),
             ],
           ],
         ),
-        subtitle: isOnShift
-          ? Text('${zone?['name'] ?? 'Zone'} • Cash: $cash MKD',
-              style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12))
-          : Text('Offline',
-              style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12)),
+        subtitle: Text(
+          isOn ? '$zone • $cash MKD' : 'Offline',
+          style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12),
+        ),
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(
               children: [
-                if (isOnShift) ...[
-                  Wrap(
-                    spacing: 8, runSpacing: 8,
+                if (isOn) ...[
+                  Row(
                     children: [
-                      _statBox('Fiscal',
-                        activeShift?['totalFiscal']?.toString() ?? '0',
-                        AppTheme.iosGreen),
-                      _statBox('Off-Track',
-                        activeShift?['totalOffTrack']?.toString() ?? '0',
-                        AppTheme.iosRed),
-                      _statBox('Total', cash, AppTheme.iosBlue),
+                      _StatChip('Fiscal',    active?['totalFiscal']?.toString() ?? '0',    AppTheme.successColor(context)),
+                      const SizedBox(width: 8),
+                      _StatChip('Off-Track', active?['totalOffTrack']?.toString() ?? '0',  AppTheme.errorColor(context)),
+                      const SizedBox(width: 8),
+                      _StatChip('Cash',      cash,                                          cs.primary),
                     ],
                   ),
                   const SizedBox(height: 12),
                 ],
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () => _showEditWaiterDialog(waiter),
-                      icon: Icon(Icons.edit_rounded,
-                        color: AppTheme.iosBlue, size: 20)),
-                    IconButton(
-                      onPressed: () => _deleteWaiter(waiter['id'] as String),
-                      icon: const Icon(Icons.delete_rounded,
-                        color: AppTheme.iosRed, size: 20)),
-                    if (isOnShift) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showChangeZoneDialog(waiter),
-                          icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                          label: const Text('Change Zone'),
-                        ),
-                      ),
-                    ],
+                    TextButton.icon(
+                      onPressed: () => _edit(context),
+                      icon: const Icon(Icons.edit_rounded, size: 16),
+                      label: const Text('Edit'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _delete(context),
+                      icon: Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.errorColor(context)),
+                      label: Text('Remove', style: TextStyle(color: AppTheme.errorColor(context))),
+                    ),
                   ],
                 ),
               ],
@@ -808,96 +1337,12 @@ class _WaitersTabState extends State<_WaitersTab> {
     );
   }
 
-  Widget _statBox(String label, String value, Color color) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 90),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(value,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color)),
-          const SizedBox(height: 2),
-          Text(label,
-            style: TextStyle(
-              fontSize: 11, color: AppTheme.textMuted(context))),
-        ],
-      ),
-    );
-  }
-
-  void _showAddWaiterDialog() {
-    final nameC = TextEditingController();
-    final usernameC = TextEditingController();
-    final passwordC = TextEditingController();
-    String role = 'waiter';
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, ss) => AlertDialog(
-          title: const Text('Add New Staff Account'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameC,
-                decoration: const InputDecoration(labelText: 'Full Name')),
-              const SizedBox(height: 12),
-              TextField(controller: usernameC,
-                decoration: const InputDecoration(labelText: 'Username')),
-              const SizedBox(height: 12),
-              TextField(controller: passwordC,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: role,
-                decoration: const InputDecoration(labelText: 'Role'),
-                items: const [
-                  DropdownMenuItem(value: 'waiter', child: Text('Standard Waiter')),
-                  DropdownMenuItem(value: 'waiter_offtrack',
-                    child: Text('Waiter (Off-Track)')),
-                ],
-                onChanged: (v) => ss(() => role = v!),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                try {
-                  await widget.apiClient.post('/admin/waiters', body: {
-                    'name': nameC.text, 'username': usernameC.text,
-                    'password': passwordC.text, 'role': role,
-                  });
-                  _loadWaiters();
-                } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')));
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEditWaiterDialog(Map<String, dynamic> waiter) {
+  void _edit(BuildContext context) {
     final nameC = TextEditingController(text: waiter['name'] as String? ?? '');
-    final usernameC = TextEditingController(
-      text: waiter['username'] as String? ?? '');
-    final passwordC = TextEditingController();
-    String role = waiter['role'] as String? ?? 'waiter';
-    if (!['waiter', 'waiter_offtrack'].contains(role)) role = 'waiter';
-
+    final userC = TextEditingController(text: waiter['username'] as String? ?? '');
+    final passC = TextEditingController();
+    String role = (waiter['role'] as String?) ?? 'waiter';
+    if (role != 'waiter' && role != 'waiter_offtrack') role = 'waiter';
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -906,50 +1351,37 @@ class _WaitersTabState extends State<_WaitersTab> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameC,
-                decoration: const InputDecoration(labelText: 'Full Name')),
+              TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name')),
               const SizedBox(height: 12),
-              TextField(controller: usernameC,
-                decoration: const InputDecoration(labelText: 'Username')),
+              TextField(controller: userC, decoration: const InputDecoration(labelText: 'Username')),
               const SizedBox(height: 12),
-              TextField(controller: passwordC,
-                decoration: const InputDecoration(
-                  labelText: 'New Password (leave blank to keep)'),
-                obscureText: true),
+              TextField(controller: passC, obscureText: true, decoration: const InputDecoration(labelText: 'New Password (leave blank to keep)')),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: role,
                 decoration: const InputDecoration(labelText: 'Role'),
                 items: const [
-                  DropdownMenuItem(value: 'waiter',
-                    child: Text('Standard Waiter')),
-                  DropdownMenuItem(value: 'waiter_offtrack',
-                    child: Text('Waiter (Off-Track)')),
+                  DropdownMenuItem(value: 'waiter', child: Text('Standard Waiter')),
+                  DropdownMenuItem(value: 'waiter_offtrack', child: Text('Waiter (Off-Track)')),
                 ],
                 onChanged: (v) => ss(() => role = v!),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-            ElevatedButton(
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  final body = <String, dynamic>{
-                    'name': nameC.text,
-                    'username': usernameC.text,
-                    'role': role
-                  };
-                  if (passwordC.text.isNotEmpty)
-                    body['password'] = passwordC.text;
-                  await widget.apiClient.put(
-                    '/admin/waiters/${waiter['id']}', body: body);
-                  _loadWaiters();
+                  final body = <String, dynamic>{'name': nameC.text, 'username': userC.text, 'role': role};
+                  if (passC.text.isNotEmpty) body['password'] = passC.text;
+                  await apiClient.put('/admin/waiters/${waiter['id']}', body: body);
+                  onRefresh();
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor(context)),
+                  );
                 }
               },
               child: const Text('Save'),
@@ -960,19 +1392,17 @@ class _WaitersTabState extends State<_WaitersTab> {
     );
   }
 
-  Future<void> _deleteWaiter(String id) async {
+  Future<void> _delete(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Waiter'),
-        content: const Text('Deactivate this waiter account?'),
+        title: const Text('Remove Staff'),
+        content: const Text('Deactivate this staff account?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
-          ElevatedButton(
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.iosRed, foregroundColor: Colors.white),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor(context)),
             child: const Text('Remove'),
           ),
         ],
@@ -980,67 +1410,46 @@ class _WaitersTabState extends State<_WaitersTab> {
     );
     if (ok == true) {
       try {
-        await widget.apiClient.delete('/admin/waiters/$id');
-        _loadWaiters();
+        await apiClient.delete('/admin/waiters/${waiter['id']}');
+        onRefresh();
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')));
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor(context)),
+        );
       }
-    }
-  }
-
-  void _showChangeZoneDialog(Map<String, dynamic> waiter) async {
-    try {
-      final res = await widget.apiClient.get('/zones');
-      final zones = List<Map<String, dynamic>>.from(
-        (res['data']['zones'] as List).map(
-          (z) => Map<String, dynamic>.from(z as Map)));
-      if (!mounted) return;
-      String? selectedZone;
-      showDialog(
-        context: context,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, ss) => AlertDialog(
-            title: const Text('Change Zone'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: zones.map((z) => RadioListTile<String>(
-                title: Text(z['name'] as String),
-                value: z['id'] as String,
-                groupValue: selectedZone,
-                onChanged: (v) => ss(() => selectedZone = v),
-              )).toList(),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: selectedZone == null ? null : () async {
-                  Navigator.pop(ctx);
-                  try {
-                    await widget.apiClient.post(
-                      '/admin/waiters/${waiter['id']}/change-zone',
-                      body: {'newZoneId': selectedZone});
-                    _loadWaiters();
-                  } catch (e) {
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')));
-                  }
-                },
-                child: const Text('Change'),
-              ),
-            ],
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')));
     }
   }
 }
 
-// ==================== ZONES SETUP ====================
+class _StatChip extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  const _StatChip(this.label, this.value, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textMuted(context))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ZONES SETUP TAB
+// ─────────────────────────────────────────────────────────────
 class _ZonesSetupTab extends StatefulWidget {
   final ApiClient apiClient;
   const _ZonesSetupTab({required this.apiClient});
@@ -1050,185 +1459,133 @@ class _ZonesSetupTab extends StatefulWidget {
 
 class _ZonesSetupTabState extends State<_ZonesSetupTab> {
   List<Map<String, dynamic>> _zones = [];
-  bool _isLoading = true;
+  bool _loading = true;
 
   @override
-  void initState() { super.initState(); _loadZones(); }
+  void initState() { super.initState(); _load(); }
 
-  Future<void> _loadZones() async {
-    setState(() => _isLoading = true);
+  Future<void> _load() async {
+    setState(() => _loading = true);
     try {
       final res = await widget.apiClient.get('/zones');
       setState(() {
         _zones = List<Map<String, dynamic>>.from(
-          (res['data']['zones'] as List).map(
-            (z) => Map<String, dynamic>.from(z as Map)));
-        _isLoading = false;
+          (res['data']['zones'] as List).map((z) => Map<String, dynamic>.from(z as Map)));
+        _loading = false;
       });
-    } catch (e) { if (mounted) setState(() => _isLoading = false); }
+    } catch (e) { if (mounted) setState(() => _loading = false); }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: AppTheme.bg(context),
       body: RefreshIndicator(
-        onRefresh: _loadZones,
-        child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _zones.length,
-              itemBuilder: (ctx, i) {
-                final zone = _zones[i];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: Icon(Icons.place_rounded,
-                      color: AppTheme.iosOrange),
-                    title: Text(zone['name'] as String? ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text(
-                      'Welcome: ${zone['welcomeMessage'] ?? 'Not set'}',
-                      style: TextStyle(
-                        color: AppTheme.textMuted(context), fontSize: 12)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          onPressed: () => _showEditZoneDialog(zone),
-                          icon: Icon(Icons.edit_rounded,
-                            color: AppTheme.iosBlue, size: 18)),
-                        IconButton(
-                          onPressed: () => _deleteZone(zone['id'] as String),
-                          icon: const Icon(Icons.delete_rounded,
-                            color: AppTheme.iosRed, size: 18)),
-                      ],
+        onRefresh: _load,
+        color: cs.primary,
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5))
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _zones.length,
+                itemBuilder: (ctx, i) {
+                  final z = _zones[i];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    color: AppTheme.surfaceColor(context),
+                    child: ListTile(
+                      leading: Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(color: cs.secondary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(Icons.place_rounded, color: cs.secondary, size: 20),
+                      ),
+                      title: Text(z['name'] as String? ?? '', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
+                      subtitle: Text('Welcome: ${z['welcomeMessage'] ?? 'Not set'}', style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(onPressed: () => _edit(z), icon: Icon(Icons.edit_rounded, color: cs.primary, size: 18)),
+                          IconButton(onPressed: () => _delete(z['id'] as String), icon: Icon(Icons.delete_outline_rounded, color: AppTheme.errorColor(context), size: 18)),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddZoneDialog,
+        onPressed: _add,
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
         icon: const Icon(Icons.add_location_alt_rounded),
         label: const Text('Add Zone'),
       ),
     );
   }
 
-  void _showAddZoneDialog() {
-    final nameC = TextEditingController();
-    final msgC = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Zone'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameC,
-              decoration: const InputDecoration(labelText: 'Zone Name')),
-            const SizedBox(height: 12),
-            TextField(controller: msgC,
-              decoration: const InputDecoration(
-                labelText: 'Welcome Message'), maxLines: 2),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await widget.apiClient.post('/zones',
-                  body: {'name': nameC.text, 'welcomeMessage': msgC.text});
-                _loadZones();
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
+  void _add() {
+    final nC = TextEditingController();
+    final mC = TextEditingController();
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Add Zone'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: nC, decoration: const InputDecoration(labelText: 'Zone Name')),
+        const SizedBox(height: 12),
+        TextField(controller: mC, decoration: const InputDecoration(labelText: 'Welcome Message'), maxLines: 2),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () async {
+          Navigator.pop(ctx);
+          await widget.apiClient.post('/zones', body: {'name': nC.text, 'welcomeMessage': mC.text});
+          _load();
+        }, child: const Text('Add')),
+      ],
+    ));
   }
 
-  void _showEditZoneDialog(Map<String, dynamic> zone) {
-    final nameC = TextEditingController(text: zone['name'] as String? ?? '');
-    final msgC = TextEditingController(
-      text: zone['welcomeMessage'] as String? ?? '');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Zone'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameC,
-              decoration: const InputDecoration(labelText: 'Zone Name')),
-            const SizedBox(height: 12),
-            TextField(controller: msgC,
-              decoration: const InputDecoration(
-                labelText: 'Welcome Message'), maxLines: 2),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await widget.apiClient.put('/zones/${zone['id']}',
-                  body: {'name': nameC.text, 'welcomeMessage': msgC.text});
-                _loadZones();
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+  void _edit(Map<String, dynamic> zone) {
+    final nC = TextEditingController(text: zone['name'] as String? ?? '');
+    final mC = TextEditingController(text: zone['welcomeMessage'] as String? ?? '');
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Edit Zone'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: nC, decoration: const InputDecoration(labelText: 'Zone Name')),
+        const SizedBox(height: 12),
+        TextField(controller: mC, decoration: const InputDecoration(labelText: 'Welcome Message'), maxLines: 2),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () async {
+          Navigator.pop(ctx);
+          await widget.apiClient.put('/zones/${zone['id']}', body: {'name': nC.text, 'welcomeMessage': mC.text});
+          _load();
+        }, child: const Text('Save')),
+      ],
+    ));
   }
 
-  Future<void> _deleteZone(String id) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Zone'),
-        content: const Text('Deactivate this zone? All tables will be hidden.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.iosRed, foregroundColor: Colors.white),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      try {
-        await widget.apiClient.delete('/zones/$id');
-        _loadZones();
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')));
-      }
-    }
+  Future<void> _delete(String id) async {
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Delete Zone'),
+      content: const Text('This will also hide all tables inside.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor(context)),
+          child: const Text('Delete'),
+        ),
+      ],
+    ));
+    if (ok == true) { await widget.apiClient.delete('/zones/$id'); _load(); }
   }
 }
 
-// ==================== TABLES SETUP ====================
+// ─────────────────────────────────────────────────────────────
+// TABLES SETUP TAB
+// ─────────────────────────────────────────────────────────────
 class _TablesSetupTab extends StatefulWidget {
   final ApiClient apiClient;
   const _TablesSetupTab({required this.apiClient});
@@ -1238,100 +1595,78 @@ class _TablesSetupTab extends StatefulWidget {
 
 class _TablesSetupTabState extends State<_TablesSetupTab> {
   List<Map<String, dynamic>> _zones = [];
-  bool _isLoading = true;
+  bool _loading = true;
 
   @override
-  void initState() { super.initState(); _loadData(); }
+  void initState() { super.initState(); _load(); }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  Future<void> _load() async {
+    setState(() => _loading = true);
     try {
       final res = await widget.apiClient.get('/zones');
       setState(() {
         _zones = List<Map<String, dynamic>>.from(
-          (res['data']['zones'] as List).map(
-            (z) => Map<String, dynamic>.from(z as Map)));
-        _isLoading = false;
+          (res['data']['zones'] as List).map((z) => Map<String, dynamic>.from(z as Map)));
+        _loading = false;
       });
-    } catch (e) { if (mounted) setState(() => _isLoading = false); }
+    } catch (e) { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _deleteTable(String id) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Table'),
-        content: const Text('Remove this physical table?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.iosRed, foregroundColor: Colors.white),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      try {
-        await widget.apiClient.delete('/tables/$id');
-        _loadData();
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')));
-      }
-    }
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Delete Table'),
+      content: const Text('Remove this physical table?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor(context)),
+          child: const Text('Delete'),
+        ),
+      ],
+    ));
+    if (ok == true) { await widget.apiClient.delete('/tables/$id'); _load(); }
   }
 
-  void _showAddTableDialog(String zoneId) {
-    final nameC = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add New Table'),
-        content: TextField(controller: nameC,
-          decoration: const InputDecoration(
-            labelText: 'Table Name (e.g. Table 14)')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await widget.apiClient.post('/tables',
-                  body: {'name': nameC.text, 'zoneId': zoneId});
-                _loadData();
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
+  void _addTable(String zoneId) {
+    final nC = TextEditingController();
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Add Table'),
+      content: TextField(controller: nC, decoration: const InputDecoration(labelText: 'Table Name (e.g. Table 14)')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () async {
+          Navigator.pop(ctx);
+          await widget.apiClient.post('/tables', body: {'name': nC.text, 'zoneId': zoneId});
+          _load();
+        }, child: const Text('Add')),
+      ],
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: AppTheme.bg(context),
       body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _zones.length,
-              itemBuilder: (ctx, i) {
-                final zone = _zones[i];
-                final tables = zone['tables'] as List? ?? [];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  child: Padding(
+        onRefresh: _load,
+        color: cs.primary,
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5))
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _zones.length,
+                itemBuilder: (ctx, i) {
+                  final zone = _zones[i];
+                  final tables = zone['tables'] as List? ?? [];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor(context),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.borderColor(context).withValues(alpha: 0.5)),
+                    ),
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1341,66 +1676,49 @@ class _TablesSetupTabState extends State<_TablesSetupTab> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.place_rounded,
-                                  color: AppTheme.iosOrange),
+                                Icon(Icons.place_rounded, color: cs.secondary, size: 20),
                                 const SizedBox(width: 8),
                                 Text(zone['name'] as String? ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.w700)),
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
                               ],
                             ),
-                            OutlinedButton.icon(
-                              onPressed: () =>
-                                _showAddTableDialog(zone['id'] as String),
-                              icon: const Icon(Icons.add_rounded, size: 14),
+                            TextButton.icon(
+                              onPressed: () => _addTable(zone['id'] as String),
+                              icon: const Icon(Icons.add_rounded, size: 16),
                               label: const Text('Add Table'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4)),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        Divider(height: 20, color: AppTheme.borderColor(context).withValues(alpha: 0.4)),
                         if (tables.isEmpty)
                           Text('No tables in this zone.',
-                            style: TextStyle(
-                              color: AppTheme.textMuted(context),
-                              fontStyle: FontStyle.italic))
+                            style: TextStyle(color: AppTheme.textMuted(context), fontStyle: FontStyle.italic))
                         else
                           Wrap(
                             spacing: 8, runSpacing: 8,
                             children: tables.map<Widget>((t) {
                               final table = Map<String, dynamic>.from(t as Map);
                               return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.surface2Color(context),
+                                  color: AppTheme.bg(context),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: AppTheme.borderColor(context).withValues(alpha: 0.6)),
+                                  border: Border.all(color: AppTheme.borderColor(context).withValues(alpha: 0.6)),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.table_restaurant_rounded,
-                                      size: 14,
-                                      color: AppTheme.textMuted(context)),
+                                    Icon(Icons.table_restaurant_rounded, size: 14, color: AppTheme.textMuted(context)),
                                     const SizedBox(width: 6),
                                     Text(table['name'] as String? ?? '',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13)),
+                                      style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textColor(context), fontSize: 13)),
                                     const SizedBox(width: 4),
                                     InkWell(
-                                      onTap: () =>
-                                        _deleteTable(table['id'] as String),
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: const Padding(
-                                        padding: EdgeInsets.all(2),
-                                        child: Icon(Icons.close_rounded,
-                                          size: 14,
-                                          color: AppTheme.iosRed),
+                                      onTap: () => _deleteTable(table['id'] as String),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(3),
+                                        child: Icon(Icons.close_rounded, size: 14, color: AppTheme.errorColor(context)),
                                       ),
                                     ),
                                   ],
@@ -1410,133 +1728,145 @@ class _TablesSetupTabState extends State<_TablesSetupTab> {
                           ),
                       ],
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
       ),
     );
   }
 }
 
-// ==================== MENU MANAGEMENT ====================
+// ─────────────────────────────────────────────────────────────
+// MENU MANAGEMENT TAB
+// ─────────────────────────────────────────────────────────────
 class _MenuManagementTab extends StatefulWidget {
   final ApiClient apiClient;
   const _MenuManagementTab({required this.apiClient});
+
   @override
   State<_MenuManagementTab> createState() => _MenuManagementTabState();
 }
 
 class _MenuManagementTabState extends State<_MenuManagementTab> {
-  List<Map<String, dynamic>> _categories = [];
-  List<Map<String, dynamic>> _destinations = [];
-  bool _isLoading = true;
+  List<Map<String, dynamic>> _cats = [];
+  List<Map<String, dynamic>> _dests = [];
+  bool _loading = true;
 
   @override
-  void initState() { super.initState(); _loadData(); }
+  void initState() { super.initState(); _load(); }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  Future<void> _load() async {
+    setState(() => _loading = true);
     try {
-      final catRes = await widget.apiClient.get('/categories');
-      final destRes = await widget.apiClient.get('/destinations');
+      final cR = await widget.apiClient.get('/categories');
+      final dR = await widget.apiClient.get('/destinations');
       setState(() {
-        _categories = List<Map<String, dynamic>>.from(
-          (catRes['data']['categories'] as List).map(
-            (c) => Map<String, dynamic>.from(c as Map)));
-        _destinations = List<Map<String, dynamic>>.from(
-          (destRes['data']['destinations'] as List).map(
-            (d) => Map<String, dynamic>.from(d as Map)));
-        _isLoading = false;
+        _cats  = List<Map<String, dynamic>>.from((cR['data']['categories'] as List).map((c) => Map<String, dynamic>.from(c as Map)));
+        _dests = List<Map<String, dynamic>>.from((dR['data']['destinations'] as List).map((d) => Map<String, dynamic>.from(d as Map)));
+        _loading = false;
       });
-    } catch (e) { setState(() => _isLoading = false); }
+    } catch (e) { setState(() => _loading = false); }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: AppTheme.bg(context),
+      appBar: AppBar(
+        backgroundColor: AppTheme.surfaceColor(context),
+        title: Text('Menu Management', style: TextStyle(color: AppTheme.textColor(context))),
+      ),
       body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Order Destinations',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-                    IconButton(
-                      onPressed: _showAddDestinationDialog,
-                      icon: Icon(Icons.add_circle_rounded,
-                        color: AppTheme.iosBlue)),
-                  ],
-                ),
-                Wrap(
-                  spacing: 8, runSpacing: 4,
-                  children: _destinations.map((d) => Chip(
-                    label: Text(d['name'] as String),
-                    deleteIcon: const Icon(Icons.close_rounded, size: 14),
-                    onDeleted: () => _deleteDestination(d['id'] as String),
-                  )).toList(),
-                ),
-                const Divider(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Categories & Menu Items',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-                    IconButton(
-                      onPressed: _showAddCategoryDialog,
-                      icon: Icon(Icons.add_circle_rounded,
-                        color: AppTheme.iosBlue)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ..._categories.map((cat) => _buildCategoryCard(cat)),
-              ],
-            ),
+        onRefresh: _load,
+        color: cs.primary,
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2.5))
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // ── Order Destinations ──────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Order Destinations',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
+                      IconButton(
+                        onPressed: _addDest,
+                        icon: Icon(Icons.add_circle_rounded, color: cs.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8, runSpacing: 8,
+                    children: _dests.map((d) => Chip(
+                      label: Text(d['name'] as String),
+                      deleteIcon: const Icon(Icons.close, size: 16),
+                      onDeleted: () async {
+                        await widget.apiClient.delete('/destinations/${d['id']}');
+                        _load();
+                      },
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  // ── Categories ─────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Menu Categories & Items',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
+                      IconButton(
+                        onPressed: _addCat,
+                        icon: Icon(Icons.add_circle_rounded, color: cs.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ..._cats.map(_buildCategoryCard),
+                ],
+              ),
       ),
     );
   }
 
-  Widget _buildCategoryCard(Map<String, dynamic> category) {
-    final items = category['items'] as List? ?? [];
-    final dest = category['destination'] as Map?;
+  Widget _buildCategoryCard(Map<String, dynamic> cat) {
+    final cs = Theme.of(context).colorScheme;
+    final items = cat['items'] as List? ?? [];
+    final dest = cat['destination'] as Map?;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
+      color: AppTheme.surfaceColor(context),
       child: ExpansionTile(
-        leading: Icon(Icons.category_rounded,
-          color: AppTheme.iosBlue),
-        title: Text(category['name'] as String? ?? '',
-          style: const TextStyle(fontWeight: FontWeight.w700)),
+        leading: Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
+          child: Icon(Icons.category_rounded, color: cs.primary, size: 18),
+        ),
+        title: Text(cat['name'] as String? ?? '', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
         subtitle: Text('→ ${dest?['name'] ?? 'Unknown'} • ${items.length} items',
           style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12)),
         trailing: IconButton(
-          onPressed: () =>
-            _showAddMenuItemDialog(category['id'] as String),
-          icon: Icon(Icons.add_circle_outline_rounded,
-            color: AppTheme.iosOrange, size: 20)),
+          onPressed: () => _addItem(cat['id'] as String),
+          icon: Icon(Icons.add_circle_outline_rounded, color: cs.secondary, size: 20),
+          tooltip: 'Add item',
+        ),
         children: items.map((item) {
           final m = item as Map;
           return ListTile(
-            title: Text(m['name'] as String? ?? '',
-              style: const TextStyle(fontWeight: FontWeight.w500)),
-            subtitle: Text(m['description'] as String? ?? '',
-              style: TextStyle(
-                fontSize: 12, color: AppTheme.textMuted(context))),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+            title: Text(m['name'] as String? ?? '', style: TextStyle(color: AppTheme.textColor(context), fontSize: 14)),
+            subtitle: Text(m['description'] as String? ?? '', style: TextStyle(color: AppTheme.textMuted(context), fontSize: 12)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('${m['price']} MKD',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700, color: AppTheme.iosBlue)),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: cs.secondary, fontSize: 13)),
                 const SizedBox(width: 4),
                 IconButton(
-                  onPressed: () => _deleteMenuItem(m['id'] as String),
-                  icon: const Icon(Icons.delete_outline_rounded,
-                    color: AppTheme.iosRed, size: 18)),
+                  onPressed: () => _deleteItem(m['id'] as String),
+                  icon: Icon(Icons.delete_outline_rounded, color: AppTheme.errorColor(context), size: 18),
+                ),
               ],
             ),
           );
@@ -1545,218 +1875,100 @@ class _MenuManagementTabState extends State<_MenuManagementTab> {
     );
   }
 
-  void _showAddDestinationDialog() {
+  void _addDest() {
     final c = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Destination'),
-        content: TextField(controller: c,
-          decoration: const InputDecoration(hintText: 'e.g. Kitchen, Bar')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await widget.apiClient.post('/destinations',
-                body: {'name': c.text});
-              _loadData();
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Add Destination'),
+      content: TextField(controller: c, decoration: const InputDecoration(labelText: 'e.g. Kitchen, Bar')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () async {
+          Navigator.pop(ctx);
+          await widget.apiClient.post('/destinations', body: {'name': c.text});
+          _load();
+        }, child: const Text('Add')),
+      ],
+    ));
   }
 
-  Future<void> _deleteDestination(String id) async {
-    await widget.apiClient.delete('/destinations/$id');
-    _loadData();
-  }
-
-  Future<void> _deleteMenuItem(String id) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Menu Item'),
-        content: const Text('Remove this item from the menu?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.iosRed, foregroundColor: Colors.white),
-            child: const Text('Delete'),
+  void _addCat() {
+    final nC = TextEditingController();
+    String? destId = _dests.isNotEmpty ? _dests[0]['id'] as String : null;
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (ctx, ss) => AlertDialog(
+        title: const Text('Add Category'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: nC, decoration: const InputDecoration(labelText: 'Category Name')),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: destId,
+            decoration: const InputDecoration(labelText: 'Destination'),
+            items: _dests.map((d) => DropdownMenuItem<String>(
+              value: d['id'] as String, child: Text(d['name'] as String))).toList(),
+            onChanged: (v) => ss(() => destId = v),
           ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () async {
+            Navigator.pop(ctx);
+            await widget.apiClient.post('/categories', body: {'name': nC.text, 'destinationId': destId});
+            _load();
+          }, child: const Text('Add')),
         ],
       ),
-    );
+    ));
+  }
+
+  void _addItem(String catId) {
+    final nC = TextEditingController();
+    final dC = TextEditingController();
+    final pC = TextEditingController();
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Add Menu Item'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: nC, decoration: const InputDecoration(labelText: 'Item Name')),
+        const SizedBox(height: 12),
+        TextField(controller: dC, decoration: const InputDecoration(labelText: 'Description'), maxLines: 2),
+        const SizedBox(height: 12),
+        TextField(controller: pC, decoration: const InputDecoration(labelText: 'Price (MKD)'), keyboardType: TextInputType.number),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () async {
+          Navigator.pop(ctx);
+          await widget.apiClient.post('/menu-items', body: {
+            'name': nC.text, 'description': dC.text,
+            'price': double.tryParse(pC.text) ?? 0,
+            'categoryId': catId,
+          });
+          _load();
+        }, child: const Text('Add')),
+      ],
+    ));
+  }
+
+  Future<void> _deleteItem(String id) async {
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Delete Menu Item'),
+      content: const Text('Remove this item from the menu?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor(context)),
+          child: const Text('Delete'),
+        ),
+      ],
+    ));
     if (ok == true) {
       try {
         await widget.apiClient.delete('/menu-items/$id');
-        _loadData();
+        _load();
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')));
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor(context)));
       }
     }
   }
-
-  void _showAddCategoryDialog() {
-    final nameC = TextEditingController();
-    String? destId;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, ss) => AlertDialog(
-          title: const Text('Add Category'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameC,
-                decoration: const InputDecoration(labelText: 'Category Name')),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Destination'),
-                value: destId,
-                items: _destinations.map((d) => DropdownMenuItem(
-                  value: d['id'] as String,
-                  child: Text(d['name'] as String))).toList(),
-                onChanged: (v) => ss(() => destId = v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: destId == null ? null : () async {
-                Navigator.pop(ctx);
-                await widget.apiClient.post('/categories',
-                  body: {'name': nameC.text, 'destinationId': destId});
-                _loadData();
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAddMenuItemDialog(String categoryId) {
-    final nameC = TextEditingController();
-    final descC = TextEditingController();
-    final priceC = TextEditingController();
-    double taxRate = 18.0;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, ss) => AlertDialog(
-          title: const Text('Add Menu Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameC,
-                decoration: const InputDecoration(labelText: 'Item Name')),
-              const SizedBox(height: 12),
-              TextField(controller: descC,
-                decoration: const InputDecoration(labelText: 'Description')),
-              const SizedBox(height: 12),
-              TextField(controller: priceC,
-                decoration: const InputDecoration(labelText: 'Price (MKD)'),
-                keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<double>(
-                decoration: const InputDecoration(labelText: 'Tax Group (ДДВ)'),
-                value: taxRate,
-                items: const [
-                  DropdownMenuItem(value: 18.0,
-                    child: Text('Group А (18%)')),
-                  DropdownMenuItem(value: 5.0,
-                    child: Text('Group Б (5%) - Essentials')),
-                ],
-                onChanged: (v) { if (v != null) ss(() => taxRate = v); },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                try {
-                  await widget.apiClient.post('/menu-items', body: {
-                    'name': nameC.text,
-                    'description': descC.text,
-                    'price': double.tryParse(priceC.text) ?? 0,
-                    'categoryId': categoryId,
-                    'taxRate': taxRate,
-                  });
-                  _loadData();
-                } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')));
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==================== QR PRINT HELPER ====================
-Future<void> _openPrintableQR(
-  BuildContext context, String zoneName,
-  List<Map<String, dynamic>> tables,
-) async {
-  final pdf = pw.Document();
-  pdf.addPage(
-    pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      build: (pw.Context ctx) => [
-        pw.Header(level: 0,
-          child: pw.Text('QR Codes — $zoneName',
-            style: pw.TextStyle(fontSize: 24,
-              fontWeight: pw.FontWeight.bold))),
-        pw.SizedBox(height: 16),
-        pw.Wrap(
-          spacing: 20, runSpacing: 20,
-          children: tables.map((table) => pw.Container(
-            width: 200, height: 250,
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(width: 1),
-              borderRadius: const pw.BorderRadius.all(
-                pw.Radius.circular(12))),
-            padding: const pw.EdgeInsets.all(16),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                pw.Text(table['name'] as String? ?? 'Table',
-                  style: pw.TextStyle(fontSize: 18,
-                    fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 12),
-                pw.BarcodeWidget(
-                  barcode: pw.Barcode.qrCode(),
-                  data: table['qrToken'] as String? ??
-                        table['id'] as String? ?? '',
-                  width: 150, height: 150),
-                pw.SizedBox(height: 12),
-                pw.Text('Scan to Order',
-                  style: const pw.TextStyle(fontSize: 12)),
-              ],
-            ),
-          )).toList(),
-        ),
-      ],
-    ),
-  );
-  await Printing.layoutPdf(
-    onLayout: (PdfPageFormat fmt) async => pdf.save());
 }
